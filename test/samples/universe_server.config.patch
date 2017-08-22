@@ -1,0 +1,7 @@
+[
+  {
+    "op": "replace",
+    "path": "/workerPoolThreads",
+    "value": 6
+  }
+]
