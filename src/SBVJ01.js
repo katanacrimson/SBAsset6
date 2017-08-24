@@ -84,9 +84,25 @@ module.exports = class SBVJ01 {
 		// ensure we're at the SBON object payload before trying to read it out
 		await sbuf.aseek(6)
 
-		// grab the metadata, an SBON map
-		const versionedJSON = await SBON.readMap(sbuf)
+		// vJSON starts with the ent name, a single 0x01 byte, the version (a signed Int32BE), then the data structure
+		const entityName = await SBON.readString(sbuf)
 
-		return JSON.parse(versionedJSON)
+		const weirdByte = await sbuf.read(1)
+		if(Buffer.compare(weirdByte, Buffer.from([0x01])) !== 0) {
+			console.log('Encountered a non-0x01 "weird byte".')
+			console.log('Please submit this sample to the developer!')
+		}
+
+		const version = (await sbuf.read(4)).readInt32BE(0)
+		const entityData = await SBON.readDynamic(sbuf)
+
+		// grab and return what we've obtained
+		return {
+			entity: {
+				name: entityName,
+				data: entityData
+			},
+			version: version,
+		}
 	}
 }
