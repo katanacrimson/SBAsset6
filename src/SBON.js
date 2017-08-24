@@ -43,7 +43,11 @@ module.exports = class SBON {
 			let byte = await sbuf.read(1)
 			byte = bigInt(byte.readUIntBE(0, 1))
 			if(byte.and(0b10000000).isZero()) {
-				return value.shiftLeft(7).or(byte).toJSNumber()
+				value = value.shiftLeft(7).or(byte)
+				if(value.isZero()) { // no, stop giving us -0! STAHP!
+					value = value.abs()
+				}
+				return value.toJSNumber()
 			}
 			value = value.shiftLeft(7).or(byte.and(0b01111111))
 		}

@@ -11,6 +11,7 @@
 
 module.exports = {
 	SBAsset6: require('./src/SBAsset6'),
+	SBVJ01: require('./src/SBVJ01'),
 	SBON: require('./src/SBON'),
 	ConsumableBuffer: require('./src/ConsumableBuffer'),
 	ConsumableFile: require('./src/ConsumableFile')
