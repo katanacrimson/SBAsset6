@@ -45,7 +45,6 @@ describe('SBVJ01', () => {
 				0x53, 0x42, 0x56, 0x4A, 0x30, 0x31, 0x54, 0x45,
 				0x53, 0x54
 			])
-			console.log(buf.toString())
 			const sbuf = new ConsumableBuffer(buf)
 
 			const res = await SBVJ01._readHeader(sbuf)
@@ -65,16 +64,33 @@ describe('SBVJ01', () => {
 			expect(res.message).to.equal('SBVJ01._readData expects a ConsumableBuffer or ConsumableFile.')
 		})
 
-		xit('should correctly return JSON from a versioned JSON payload', async () => {
+		it('should correctly return a JS Object from a versioned JSON payload', async () => {
 			// todo
+			const buf = Buffer.from([
+				0x53, 0x42, 0x56, 0x4A, 0x30, 0x31, 0x04, 0x54,
+				0x65, 0x73, 0x74, 0x01, 0x00, 0x00, 0x00, 0x01,
+				0x07, 0x02, 0x04, 0x6B, 0x65, 0x79, 0x32, 0x05,
+				0x04, 0x76, 0x61, 0x6C, 0x32, 0x03, 0x6B, 0x65,
+				0x79, 0x05, 0x03, 0x76, 0x61, 0x6C
+			])
+			const sbuf = new ConsumableBuffer(buf)
+			const expected = {
+				key: 'val',
+				key2: 'val2'
+			}
+
+			const res = await SBVJ01._readData(sbuf)
+			expect(res.entity.data).to.deep.equal(expected)
+			expect(res.entity.name).to.equal('Test')
+			expect(res.version).to.equal(1)
 		})
 	})
 })
 
 describe('SBVJ01 integration test', () => {
-	xit('should work as expected on a small sample SBVJ01 file', async () => {
-		const filename = __dirname + '/samples/more-threads.pak'
-		const pak = new SBVJ01(filename)
+	it('should work as expected on a sample SBVJ01 file', async () => {
+		const filename = __dirname + '/samples/7bb55a32b4a5fb530273d4b954f39d20.player'
+		const player = new SBVJ01(filename)
 		let expected = {
 			metadata: {
 				priority: 9999999999
@@ -83,43 +99,12 @@ describe('SBVJ01 integration test', () => {
 				'/universe_server.config.patch'
 			]
 		}
-		let res = await pak.load()
-		expect(res).to.deep.equal(expected)
+		let res = await player.load()
+		await fs.writeFile(__dirname + '/samples/Misty.player', JSON.stringify(res.entity.data, null, "\t"))
+		expected = JSON.parse(await fs.readFile(__dirname + '/samples/Misty.player', { encoding: 'utf8', flag: 'r' }))
 
-		expected = await fs.readFile(__dirname + '/samples/universe_server.config.patch', { encoding: 'utf8', flag: 'r' })
-		res = await pak.getFile('/universe_server.config.patch')
-		expect(res).to.equal(expected)
-	})
-
-	xit('should work as expected on a large sample SBVJ01 archive', async () => {
-		const filename = __dirname + '/samples/ExampleMod.pak'
-		const pak = new SBAsset6(filename)
-		let expected = {
-			metadata: JSON.parse(await fs.readFile(__dirname + '/samples/ExampleMod.metadata', { encoding: 'utf8', flag: 'r' })),
-			files: [
-				'/items/somefile3.json',
-				'/items/generic/crafting/somefile7.json',
-				'/items/generic/crafting/somefile4.json',
-				'/items/blah/somefile.json',
-				'/items/somefile5.json',
-				'/items/somefile2.json',
-				'/items/generic/somefile3.json',
-				'/items/generic/somefile.json',
-				'/items/blah/somefile3.json',
-				'/items/generic/crafting/somefile.json',
-				'/items/generic/crafting/somefile9.json',
-				'/items/generic/crafting/somefile6.json',
-				'/items/generic/crafting/somefile3.json',
-				'/items/somefile.json',
-				'/items/somefile4.json',
-				'/items/generic/somefile2.json',
-				'/items/blah/somefile2.json',
-				'/items/generic/crafting/somefile8.json',
-				'/items/generic/crafting/somefile5.json',
-				'/items/generic/crafting/somefile2.json'
-			]
-		}
-		let res = await pak.load()
-		expect(res).to.deep.equal(expected)
+		expect(res.version).to.equal(30)
+		expect(res.entity.data).to.deep.equal(expected)
+		expect(res.entity.name).to.equal('PlayerEntity')
 	})
 })
