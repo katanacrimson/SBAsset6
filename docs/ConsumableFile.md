@@ -39,7 +39,7 @@ readFile(cbuf)
 
 ## Methods
 
-### new ConsumableFile(String)
+### new ConsumableFile(path)
 
 ConsumableFile constructor
 

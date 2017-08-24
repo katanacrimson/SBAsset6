@@ -39,7 +39,7 @@ readBuffer(cbuf)
 
 ## Methods
 
-### new ConsumableBuffer(Buffer)
+### new ConsumableBuffer(buf)
 
 ConsumableBuffer constructor
 

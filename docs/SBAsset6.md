@@ -38,7 +38,7 @@ readPak(pak)
 
 ## Methods
 
-### new SBAsset6(String)
+### new SBAsset6(path)
 
 SBAsset6 Constructor
 
@@ -57,13 +57,13 @@ This is a convenience method for the common workflow of loading the archive.
 ``` js
 async () => {
 	const filepath = '/path/to/mod.pak'
-	const pak = new SBAsset6()
+	const pak = new SBAsset6(filepath)
 	const { metadata, files } = await pak.load()
 	// you know have access to metadata and files. yay!
 }
 ```
 
-### SBAsset6.getFile()
+### SBAsset6.getFile(filename)
 
 Get a specific file from the archive.
 
