@@ -80,20 +80,20 @@ describe('SBVJ01', () => {
 			}
 
 			const res = await SBVJ01._readData(sbuf)
-			expect(res.entity.data).to.deep.equal(expected)
-			expect(res.entity.name).to.equal('Test')
+			expect(res.entity).to.deep.equal(expected)
+			expect(res.name).to.equal('Test')
 			expect(res.version).to.equal(1)
 		})
 	})
 })
 
-describe('SBVJ01 integration test', function () {
-	// this is a lot of parsing - trying to parse an entire player file takes a little bit
-	//   so, we'll adjust slow/timeout accordingly
-	this.slow(1000)
-	this.timeout(5000)
+describe('SBVJ01 integration test', () => {
+	it('should work as expected on a sample SBVJ01 file (slow)', async function() {
+		// this is a lot of parsing - trying to parse an entire player file takes a little bit
+		//   so, we'll adjust slow/timeout accordingly
+		this.slow(1000)
+		this.timeout(5000)
 
-	it('should work as expected on a sample SBVJ01 file', async () => {
 		const filename = __dirname + '/samples/7bb55a32b4a5fb530273d4b954f39d20.player'
 		const player = new SBVJ01(filename)
 		const expected = JSON.parse(await fs.readFile(__dirname + '/samples/Misty.player', { encoding: 'utf8', flag: 'r' }))
@@ -101,7 +101,7 @@ describe('SBVJ01 integration test', function () {
 		let res = await player.load()
 
 		expect(res.version).to.equal(30)
-		expect(res.entity.data).to.deep.equal(expected)
-		expect(res.entity.name).to.equal('PlayerEntity')
+		expect(res.entity).to.deep.equal(expected)
+		expect(res.name).to.equal('PlayerEntity')
 	})
 })

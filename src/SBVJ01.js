@@ -21,7 +21,7 @@ module.exports = class SBVJ01 {
 	/**
 	 * SBVJ01 Constructor
 	 *
-	 * @param  {String} path - The filepath for the archive we're going to work with.
+	 * @param  {String} path - The filepath for the entity file we're going to work with.
 	 * @return {SBVJ01}
 	 */
 	constructor(path) {
@@ -98,11 +98,9 @@ module.exports = class SBVJ01 {
 
 		// grab and return what we've obtained
 		return {
-			entity: {
-				name: entityName,
-				data: entityData
-			},
-			version: version,
+			name: entityName,
+			entity: entityData,
+			version: version
 		}
 	}
 }
