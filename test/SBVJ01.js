@@ -87,21 +87,18 @@ describe('SBVJ01', () => {
 	})
 })
 
-describe('SBVJ01 integration test', () => {
+describe('SBVJ01 integration test', function () {
+	// this is a lot of parsing - trying to parse an entire player file takes a little bit
+	//   so, we'll adjust slow/timeout accordingly
+	this.slow(1000)
+	this.timeout(5000)
+
 	it('should work as expected on a sample SBVJ01 file', async () => {
 		const filename = __dirname + '/samples/7bb55a32b4a5fb530273d4b954f39d20.player'
 		const player = new SBVJ01(filename)
-		let expected = {
-			metadata: {
-				priority: 9999999999
-			},
-			files: [
-				'/universe_server.config.patch'
-			]
-		}
+		const expected = JSON.parse(await fs.readFile(__dirname + '/samples/Misty.player', { encoding: 'utf8', flag: 'r' }))
+
 		let res = await player.load()
-		await fs.writeFile(__dirname + '/samples/Misty.player', JSON.stringify(res.entity.data, null, "\t"))
-		expected = JSON.parse(await fs.readFile(__dirname + '/samples/Misty.player', { encoding: 'utf8', flag: 'r' }))
 
 		expect(res.version).to.equal(30)
 		expect(res.entity.data).to.deep.equal(expected)
