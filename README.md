@@ -29,7 +29,7 @@ In brief:
 
 ``` js
 'use strict'
-const { SBAsset6 } = require('SBAsset6')
+const SBAsset6 = require('SBAsset6')
 
 const pak = new SBAsset6('/path/to/pak/file.pak')
 pak.load().then(async () => {

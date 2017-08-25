@@ -12,7 +12,8 @@
 const fs = require('fs-extra')
 const { expect } = require('chai')
 const { Uint64BE } = require('int64-buffer')
-const { SBAsset6, ConsumableBuffer } = require('./../index')
+const SBAsset6 = require('./../SBAsset6')
+const ConsumableBuffer = require('ConsumableBuffer')
 
 describe('SBAsset6', () => {
 	describe('SBAsset6._readHeader', () => {

@@ -11,9 +11,9 @@
 
 const fs = require('fs-extra')
 const { Uint64BE } = require('int64-buffer')
-const ConsumableBuffer = require('./ConsumableBuffer')
-const ConsumableFile = require('./ConsumableFile')
-const SBON = require('./SBON')
+const ConsumableBuffer = require('ConsumableBuffer')
+const ConsumableFile = require('ConsumableFile')
+const SBON = require('SBON')
 
 //
 // SBAsset6 - provides an abstraction around reading/interacting with SBAsset6 archives (also known as Starbound "pak" files)
