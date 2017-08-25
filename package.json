@@ -1,8 +1,8 @@
 {
   "name": "SBAsset6",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "SBAsset6 - Starbound pak parsing library",
-  "main": "index.js",
+  "main": "SBAsset6.js",
   "scripts": {
     "test": "./node_modules/mocha/bin/mocha"
   },
@@ -12,8 +12,7 @@
   },
   "keywords": [
     "starbound",
-    "sbasset6",
-    "sbon"
+    "SBAsset6"
   ],
   "author": "Damian Bushong <katana@odios.us>",
   "license": "MIT",
@@ -22,7 +21,9 @@
   },
   "homepage": "https://github.com/damianb/sbasset6#readme",
   "dependencies": {
-    "big-integer": "^1.6.24",
+    "ConsumableBuffer": "github:damianb/ConsumableBuffer",
+    "ConsumableFile": "github:damianb/ConsumableFile",
+    "SBON": "github:damianb/SBON",
     "fs-extra": "^4.0.1",
     "int64-buffer": "^0.1.9"
   },

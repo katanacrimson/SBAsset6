@@ -8,7 +8,7 @@ All methods are async functions that return promises. This entire library depend
 ## Usage
 
 ``` js
-const { SBAsset6 }  = require('SBAsset6')
+const SBAsset6  = require('SBAsset6')
 
 // you can work with it like normal promises...
 const filepath = '/path/to/mod.pak'
