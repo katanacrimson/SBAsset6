@@ -1,7 +1,7 @@
 {
   "name": "SBAsset6",
   "version": "1.2.0",
-  "description": "SBAsset6 - Starbound pak parsing library",
+  "description": "SBAsset6 parsing library",
   "main": "SBAsset6.js",
   "scripts": {
     "test": "./node_modules/mocha/bin/mocha"
