@@ -1,5 +1,5 @@
 //
-// SBAsset6 - JS library for working with SBAsset6 archive format
+// SBAsset6 - JS library for working with SBAsset6 archive format.
 // ---
 // @copyright (c) 2017 Damian Bushong <katana@odios.us>
 // @license MIT license
