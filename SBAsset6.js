@@ -62,7 +62,7 @@ module.exports = class SBAsset6 {
 	 * Get a specific file from the archive.
 	 *
 	 * @param  {String} filename - The path to the file inside the archive that we want.
-	 * @return {Promise:String} - The contents of the file we want to fetch.
+	 * @return {Promise:Buffer} - The buffer containing the contents of the file we want to fetch.
 	 */
 	async getFile(filename) {
 		if(this.fileTable === null) {
@@ -154,7 +154,7 @@ module.exports = class SBAsset6 {
 	 * @param  {ConsumableBuffer|ConsumableFile} sbuf - The stream to read from.
 	 * @param  {Uint64BE} offset - Offset in bytes of the file's location in the archive.
 	 * @param  {Uint64BE} filelength - Length in bytes for the file.
-	 * @return {Promise:String} - The contents of the specified file.
+	 * @return {Promise:Buffer} - The buffer containing the contents of the specified file.
 	 */
 	static async _getFile(sbuf, offset, filelength) {
 		if(!(sbuf instanceof ConsumableBuffer || sbuf instanceof ConsumableFile)) {
@@ -170,6 +170,6 @@ module.exports = class SBAsset6 {
 		}
 
 		await sbuf.aseek(offset)
-		return (await sbuf.read(filelength)).toString()
+		return await sbuf.read(filelength)
 	}
 }
