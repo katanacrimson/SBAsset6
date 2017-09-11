@@ -9,16 +9,28 @@
 /*jslint node: true, asi: true */
 'use strict'
 
+const crypto = require('crypto')
+const path = require('path')
 const fs = require('fs-extra')
 const { expect } = require('chai')
 const { Uint64BE } = require('int64-buffer')
 const SBAsset6 = require('./../SBAsset6')
 const ConsumableBuffer = require('ConsumableBuffer')
-const crypto = require('crypto')
 
 describe('SBAsset6 regression tests', () => {
 	const tmpDir = __dirname + '/tmp'
-	it('rtest-i#4: non-JSON files corrupted on read', async () => {
+
+	afterEach(async () => {
+		let files = await fs.readdir(tmpDir + '/')
+		for(const file of files) {
+			if(file === '.gitkeep') {
+				continue
+			}
+
+			await fs.unlink(path.join(tmpDir, file))
+		}
+	})
+	it('rtest-i#4: non-JSON files should not be corrupted on read', async () => {
 		const hash1 = crypto.createHash('sha256')
 		const hash2 = crypto.createHash('sha256')
 
