@@ -1,0 +1,6 @@
+{
+  "author" : "katana",
+  "friendlyName" : "Regression test: Issue #4",
+  "name" : "rt-i4",
+  "version" : "1.0.0"
+}

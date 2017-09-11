@@ -181,7 +181,7 @@ describe('SBAsset6', () => {
 			})
 
 			const res = await SBAsset6._getFile(sbuf, offset, length)
-			expect(res).to.equal(expected)
+			expect(res.toString('utf8')).to.equal(expected)
 		})
 	})
 })
@@ -203,7 +203,7 @@ describe('SBAsset6 integration test', () => {
 
 		expected = await fs.readFile(__dirname + '/samples/universe_server.config.patch', { encoding: 'utf8', flag: 'r' })
 		res = await pak.getFile('/universe_server.config.patch')
-		expect(res).to.equal(expected)
+		expect(res.toString('utf8')).to.equal(expected)
 	})
 
 	it('should work as expected on a large sample SBAsset6 archive', async () => {
