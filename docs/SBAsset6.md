@@ -68,7 +68,7 @@ async () => {
 Get a specific file from the archive.
 
 * @param  {String} filename - The path to the file inside the archive that we want.
-* @return {Promise:String} - The contents of the file we want to fetch.
+* @return {Promise:Buffer} - The contents of the file we want to fetch.
 
 ``` js
 async () => {
@@ -78,6 +78,6 @@ async () => {
 	// gotta load metatable before we can get files...
 
 	const modFileInPak = '/file/inside/pak.config'
-	const fileContents = await pak.getFile(modFileInPak)
+	const fileContents = (await pak.getFile(modFileInPak)).toString('utf8')
 }
 ```
