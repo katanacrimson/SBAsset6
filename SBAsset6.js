@@ -12,6 +12,8 @@ const fs = require('fs-extra')
 const { Uint64BE } = require('int64-buffer')
 const ConsumableBuffer = require('ConsumableBuffer')
 const ConsumableFile = require('ConsumableFile')
+const ExpandingBuffer = require('ExpandingBuffer')
+const ExpandingFile = require('ExpandingFile')
 const SBON = require('SBON')
 
 //
@@ -171,5 +173,103 @@ module.exports = class SBAsset6 {
 
 		await sbuf.aseek(offset)
 		return sbuf.read(filelength)
+	}
+
+	static async _writeFile(sbuf, filepath, virtFilepath) {
+		if(!(sbuf instanceof ExpandingBuffer || sbuf instanceof ExpandingFile)) {
+			throw new TypeError('SBAsset6._writeFile expects an ExpandingBuffer or ExpandingFile')
+		}
+
+		let offset = sbuf.position
+
+		return
+	}
+
+	static async _buildMetatable(metadata, filetable) {
+		let sbuf = new ExpandingBuffer()
+
+		await sbuf.write('INDEX')
+		await SBON.writeMap(sbuf, metadata)
+		await SBON.writeVarInt(sbuf, Object.values(filetable).length)
+
+		// metadata/filetable is JUST like what we get from _readMetatable
+
+		for(let path in filetable) {
+			let file = filetable[path]
+
+			if(path.length > 255) {
+				throw new RangeError('SBAsset6._buildMetatable expects all filetable virtual paths to be under 255 characters.')
+			}
+
+			if(!(file.offset instanceof Uint64BE)) {
+				throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file offset.')
+			}
+
+			if(!(file.fileLength instanceof Uint64BE)) {
+				throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file length.')
+			}
+
+			let buf = Buffer.alloc(1)
+			buf.writeUint8(path.length)
+
+			await sbuf.write(buf)
+			await sbuf.write(path)
+			await sbuf.write(file.offset)
+			await sbuf.write(file.fileLength)
+		}
+
+		return sbuf.getCurrentBuffer()
+	}
+
+	static async _sortFiletable(filetable) {
+		// ensure the filetable is sorted by offset; we need to be able to easily identify
+		//   what is affected by updates, inserts, removals...etc.
+		if(!Array.isArray(filetable)) {
+			filetable = Object.values(filetable)
+		}
+
+		return filetable.sort((a, b) => {
+			if(a.offset === b.offset) {
+				return 0
+			}
+
+			return (a.offset > b.offset) ? 1 : -1
+		})
+	}
+
+	static async _adjustFiletable(filetable, path, netChange) {
+		// ensure that filetable is correctly sorted FIRST
+		// (this call may be moved outside this function)
+		filetable = SBAsset6._sortFiletable(filetable)
+
+		// identify everything downstream from specified path
+		//
+		// alter everything per netchange, UNLESS NETCHANGE IS NULL.
+		// if netchange is null, we assume that the path is being removed; the path will then be removed from the filetable
+		//   and all following paths will be adjusted upward to accomodate
+		// this WILL require creating an entirely new file and streaming content into it; no way about it with node.
+		let file = null
+
+		// TODO: see if this makes more sense to rewrite it to not use the sorted filetable,
+		//   and instead iterate over the original object itself. would make finding the original path easier,
+		//   it just makes finding everything affected afterwards take longer.
+
+		for(let entry in filetable) {
+			if(filetable[entry].path === path) {
+				file = filetable[entry]
+				if(netChange === null) {
+					delete filetable[entry]
+				} else {
+					filetable[entry].fileLength += netChange
+				}
+			} else if(file !== null) { // we already found it, just start adjusting downward
+				filetable[entry].offset += netChange
+			}
+		}
+
+		return filetable
+
+		// TODO 2:
+		// is this even necessary? we probably won't be adjusting the filetable each time, and instead dynamically generating it when rewriting the pak...
 	}
 }
