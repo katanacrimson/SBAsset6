@@ -170,6 +170,6 @@ module.exports = class SBAsset6 {
 		}
 
 		await sbuf.aseek(offset)
-		return await sbuf.read(filelength)
+		return sbuf.read(filelength)
 	}
 }
