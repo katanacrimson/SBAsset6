@@ -27,14 +27,14 @@ module.exports = class SBAsset6 {
 	constructor(path) {
 		this.path = path
 		this.pak = this.metatablePosition = null
-		this.fileTable = this.files = this.metadata = null
+		this.filetable = this.files = this.metadata = null
 	}
 
 	/**
 	 * Loads the archive, parses everything out and then provides access to the archive files and metadata.
 	 * This is a convenience method for the common workflow of loading the archive.
 	 *
-	 * @return {Promise:object} - An object containing the metadata and all files contained in the archive that can be read out.
+	 * @return {Promise:Object} - An object containing the metadata and all files contained in the archive that can be read out.
 	 */
 	async load() {
 		// first, open the pak file up
@@ -46,8 +46,8 @@ module.exports = class SBAsset6 {
 
 		// extract the metatable
 		const meta = await SBAsset6._readMetatable(this.pak, this.metatablePosition)
-		this.fileTable = meta.fileTable
-		this.files = Object.keys(this.fileTable)
+		this.filetable = meta.filetable
+		this.files = Object.keys(this.filetable)
 		this.metadata = meta.metadata
 
 		// return the important metatable info.
@@ -64,15 +64,15 @@ module.exports = class SBAsset6 {
 	 * @return {Promise:Buffer} - The buffer containing the contents of the file we want to fetch.
 	 */
 	async getFile(filename) {
-		if(this.fileTable === null) {
+		if(this.filetable === null) {
 			throw new Error('Filetable empty - please use SBAsset6._readMetatable() first.')
 		}
 
-		if(!this.fileTable[filename]) {
+		if(!this.filetable[filename]) {
 			throw new Error('Nothing found in filetable for file "' + filename + '"')
 		}
 
-		return await SBAsset6._getFile(this.pak, this.fileTable[filename].offset, this.fileTable[filename].filelength)
+		return await SBAsset6._getFile(this.pak, this.filetable[filename].offset, this.filetable[filename].filelength)
 	}
 
 	/**
@@ -98,12 +98,12 @@ module.exports = class SBAsset6 {
 	}
 
 	/**
-	 * Reads the metatable, given the correct position, and parses out the fileTable and archive metadata.
+	 * Reads the metatable, given the correct position, and parses out the filetable and archive metadata.
 	 * @access private
 	 *
 	 * @param  {ConsumableBuffer|ConsumableFile} sbuf - The stream to read from.
 	 * @param  {Uint64BE} metatablePosition - The Uint64BE containing the metatable location within the archive.
-	 * @return {Promise:Object} - An Object that contains the metadata and fileTable of the archive.
+	 * @return {Promise:Object} - An Object that contains the metadata and filetable of the archive.
 	 */
 	static async _readMetatable(sbuf, metatablePosition) {
 		if(!(sbuf instanceof ConsumableBuffer || sbuf instanceof ConsumableFile)) {
@@ -129,22 +129,23 @@ module.exports = class SBAsset6 {
 		const numFiles = await SBON.readVarInt(sbuf)
 
 		// read the file table from the metadata...
-		let fileTable = {},
+		let filetable = {},
 			i = numFiles
 		while(i--) {
 			const pathLength = (await sbuf.read(1)).readUInt8(0)
 			const filePath = (await sbuf.read(pathLength)).toString()
 			const fileOffset = new Uint64BE(await sbuf.read(8))
 			const fileLength = new Uint64BE(await sbuf.read(8))
-			fileTable[filePath] = {
+			filetable[filePath] = {
 				offset: fileOffset,
-				filelength: fileLength
+				filelength: fileLength,
+				// path: filePath
 			}
 		}
 
 		return {
 			metadata: metadata,
-			fileTable: fileTable,
+			filetable: filetable,
 		}
 	}
 
