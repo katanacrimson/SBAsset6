@@ -100,10 +100,11 @@ describe('SBAsset6', () => {
 				metadata: {
 					priority: 9999999999
 				},
-				fileTable: {
+				filetable: {
 					'/universe_server.config.patch': {
 						offset: new Uint64BE(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10])),
-						filelength: new Uint64BE(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x57]))
+						filelength: new Uint64BE(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x57])),
+						// path: '/universe_server.config.patch'
 					}
 				}
 			}
