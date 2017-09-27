@@ -37,7 +37,7 @@ describe('SBAsset6 regression tests', () => {
 		let samplePath = __dirname + '/regression/rt-i4'
 		let pak = new SBAsset6(samplePath + '/rt-i4.pak')
 		let res = await pak.load()
-		let sample = await pak.getFile('/sfx/white_noise.ogg')
+		let sample = await pak.files.getFile('/sfx/white_noise.ogg')
 
 		await fs.writeFile(tmpDir + '/_white_noise.ogg', sample)
 

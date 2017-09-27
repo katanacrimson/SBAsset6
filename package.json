@@ -26,6 +26,7 @@
     "ExpandingBuffer": "github:damianb/ExpandingBuffer",
     "ExpandingFile": "github:damianb/ExpandingFile",
     "SBON": "github:damianb/SBON",
+    "StreamPipeline": "github:damianb/streampipeline",
     "fs-extra": "^4.0.2",
     "int64-buffer": "^0.1.9"
   },

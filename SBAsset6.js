@@ -14,7 +14,9 @@ const ConsumableBuffer = require('ConsumableBuffer')
 const ConsumableFile = require('ConsumableFile')
 const ExpandingBuffer = require('ExpandingBuffer')
 const ExpandingFile = require('ExpandingFile')
+const StreamPipeline = require('StreamPipeline')
 const SBON = require('SBON')
+const FileMapper = require('./FileMapper')
 
 //
 // SBAsset6 - provides an abstraction around reading/interacting with SBAsset6 archives (also known as Starbound "pak" files)
@@ -29,7 +31,8 @@ module.exports = class SBAsset6 {
 	constructor(path) {
 		this.path = path
 		this.pak = this.metatablePosition = null
-		this.filetable = this.files = this.metadata = null
+		this.metadata = null
+		this.files = new FileMapper()
 	}
 
 	/**
@@ -48,33 +51,87 @@ module.exports = class SBAsset6 {
 
 		// extract the metatable
 		const meta = await SBAsset6._readMetatable(this.pak, this.metatablePosition)
-		this.filetable = meta.filetable
-		this.files = Object.keys(this.filetable)
+
+		meta.filetable
+		for(const fileEntry of meta.filetable) {
+			await this.files.setFile(fileEntry.path, {
+				pak: this,
+				start: fileEntry.offset,
+				filelength: fileEntry.filelength
+			})
+		}
 		this.metadata = meta.metadata
 
 		// return the important metatable info.
 		return {
 			metadata: this.metadata,
-			files: this.files
+			files: this.files.list()
 		}
 	}
 
 	/**
-	 * Get a specific file from the archive.
+	 * Gets a specific chunk of data from the pak file we're working with.
 	 *
-	 * @param  {String} filename - The path to the file inside the archive that we want.
-	 * @return {Promise:Buffer} - The buffer containing the contents of the file we want to fetch.
+	 * @private
+	 * @param  {Uint64BE} offset - How far into the pak to seek to.
+	 * @param  {Uint64BE} size - The amount of data to fetch.
+	 * @return {Promise:Buffer} - The data we're looking for.
 	 */
-	async getFile(filename) {
-		if(this.filetable === null) {
-			throw new Error('Filetable empty - please use SBAsset6._readMetatable() first.')
+	async getPakData(offset, size) {
+		return SBAsset6._getFile(this.pak, offset, size)
+	}
+
+	/**
+	 * Save the currently generated SBAsset6 archive.
+	 * @return {[type]} [description]
+	 */
+	async save() {
+		const newFile = new ExpandingFile(this.path + '.tmp')
+		await newFile.open()
+
+		// set up the Stream Pipeline...
+		const sfile = new StreamPipeline()
+		await sfile.load(newFile)
+
+		// write the header
+		await sfile.pump(Buffer.from('SBAsset6'))
+
+		// write a placeholder for the metatable position (8 bytes, a Uint64BE)
+		await sfile.pump(Buffer.alloc(8))
+
+		let files = this.files.list(),
+			filetable = []
+		for(const file of files) {
+			const type = this.files.getFileMeta(file)
+
+			let res = null
+			switch(type) {
+				case 'pak':
+					res = await sfile.pump(file.source.pak.fd, file.start, file.filelength)
+				break
+
+				case 'fd':
+				case 'path':
+					res = await sfile.pump(file.source, file.start, file.filelength)
+				break
+
+				case 'buffer':
+					res = await sfile.pump(file.source)
+				break
+
+				default:
+					throw new TypeError('oops')
+			}
+
+			filetable.push({
+				path: file.virtualPath,
+				offset: new Uint64BE(res.offset),
+				filelength: new Uint64BE(res.wrote)
+			})
 		}
 
-		if(!this.filetable[filename]) {
-			throw new Error('Nothing found in filetable for file "' + filename + '"')
-		}
-
-		return await SBAsset6._getFile(this.pak, this.filetable[filename].offset, this.filetable[filename].filelength)
+		const metatablePosition = new Uint64BE(newFile.position)
+		SBAsset6._buildMetatable()
 	}
 
 	/**
@@ -131,18 +188,18 @@ module.exports = class SBAsset6 {
 		const numFiles = await SBON.readVarInt(sbuf)
 
 		// read the file table from the metadata...
-		let filetable = {},
+		let filetable = [],
 			i = numFiles
 		while(i--) {
 			const pathLength = (await sbuf.read(1)).readUInt8(0)
 			const filePath = (await sbuf.read(pathLength)).toString()
 			const fileOffset = new Uint64BE(await sbuf.read(8))
-			const fileLength = new Uint64BE(await sbuf.read(8))
-			filetable[filePath] = {
+			const filelength = new Uint64BE(await sbuf.read(8))
+			filetable.push({
 				offset: fileOffset,
-				filelength: fileLength,
-				// path: filePath
-			}
+				filelength: filelength,
+				path: filePath
+			})
 		}
 
 		return {
@@ -164,25 +221,15 @@ module.exports = class SBAsset6 {
 		}
 
 		if(!(offset instanceof Uint64BE)) {
-			throw new TypeError('SBAsset6._getFile expects a Uint64BE object for an offset.')
+			throw new TypeError('SBAsset6._getFile expects a Uint64BE instance for an offset.')
 		}
 
 		if(!(filelength instanceof Uint64BE)) {
-			throw new TypeError('SBAsset6._getFile expects a Uint64BE object for a filelength.')
+			throw new TypeError('SBAsset6._getFile expects a Uint64BE instance for a filelength.')
 		}
 
 		await sbuf.aseek(offset)
 		return sbuf.read(filelength)
-	}
-
-	static async _writeFile(sbuf, filepath, virtFilepath) {
-		if(!(sbuf instanceof ExpandingBuffer || sbuf instanceof ExpandingFile)) {
-			throw new TypeError('SBAsset6._writeFile expects an ExpandingBuffer or ExpandingFile')
-		}
-
-		let offset = sbuf.position
-
-		return
 	}
 
 	static async _buildMetatable(metadata, filetable) {
@@ -192,84 +239,29 @@ module.exports = class SBAsset6 {
 		await SBON.writeMap(sbuf, metadata)
 		await SBON.writeVarInt(sbuf, Object.values(filetable).length)
 
-		// metadata/filetable is JUST like what we get from _readMetatable
-
-		for(let path in filetable) {
-			let file = filetable[path]
-
-			if(path.length > 255) {
-				throw new RangeError('SBAsset6._buildMetatable expects all filetable virtual paths to be under 255 characters.')
+		for(let file of filetable) {
+			let pathBuffer = Buffer.from(file.path)
+			if(pathBuffer.length > 255) {
+				throw new RangeError('SBAsset6._buildMetatable expects all filetable virtual paths to be under 255 bytes.')
 			}
 
 			if(!(file.offset instanceof Uint64BE)) {
 				throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file offset.')
 			}
 
-			if(!(file.fileLength instanceof Uint64BE)) {
+			if(!(file.filelength instanceof Uint64BE)) {
 				throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file length.')
 			}
 
 			let buf = Buffer.alloc(1)
-			buf.writeUint8(path.length)
+			buf.writeUint8(pathBuffer.length)
 
 			await sbuf.write(buf)
-			await sbuf.write(path)
+			await sbuf.write(file.path)
 			await sbuf.write(file.offset)
-			await sbuf.write(file.fileLength)
+			await sbuf.write(file.filelength)
 		}
 
 		return sbuf.getCurrentBuffer()
-	}
-
-	static async _sortFiletable(filetable) {
-		// ensure the filetable is sorted by offset; we need to be able to easily identify
-		//   what is affected by updates, inserts, removals...etc.
-		if(!Array.isArray(filetable)) {
-			filetable = Object.values(filetable)
-		}
-
-		return filetable.sort((a, b) => {
-			if(a.offset === b.offset) {
-				return 0
-			}
-
-			return (a.offset > b.offset) ? 1 : -1
-		})
-	}
-
-	static async _adjustFiletable(filetable, path, netChange) {
-		// ensure that filetable is correctly sorted FIRST
-		// (this call may be moved outside this function)
-		filetable = SBAsset6._sortFiletable(filetable)
-
-		// identify everything downstream from specified path
-		//
-		// alter everything per netchange, UNLESS NETCHANGE IS NULL.
-		// if netchange is null, we assume that the path is being removed; the path will then be removed from the filetable
-		//   and all following paths will be adjusted upward to accomodate
-		// this WILL require creating an entirely new file and streaming content into it; no way about it with node.
-		let file = null
-
-		// TODO: see if this makes more sense to rewrite it to not use the sorted filetable,
-		//   and instead iterate over the original object itself. would make finding the original path easier,
-		//   it just makes finding everything affected afterwards take longer.
-
-		for(let entry in filetable) {
-			if(filetable[entry].path === path) {
-				file = filetable[entry]
-				if(netChange === null) {
-					delete filetable[entry]
-				} else {
-					filetable[entry].fileLength += netChange
-				}
-			} else if(file !== null) { // we already found it, just start adjusting downward
-				filetable[entry].offset += netChange
-			}
-		}
-
-		return filetable
-
-		// TODO 2:
-		// is this even necessary? we probably won't be adjusting the filetable each time, and instead dynamically generating it when rewriting the pak...
 	}
 }

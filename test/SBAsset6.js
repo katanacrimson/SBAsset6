@@ -100,13 +100,13 @@ describe('SBAsset6', () => {
 				metadata: {
 					priority: 9999999999
 				},
-				filetable: {
-					'/universe_server.config.patch': {
+				filetable: [
+					{
 						offset: new Uint64BE(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10])),
 						filelength: new Uint64BE(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x57])),
-						// path: '/universe_server.config.patch'
+						path: '/universe_server.config.patch'
 					}
-				}
+				]
 			}
 
 			const res = await SBAsset6._readMetatable(sbuf, metatablePosition)
@@ -141,7 +141,7 @@ describe('SBAsset6', () => {
 				res = err
 			}
 			expect(res).to.be.an.instanceof(TypeError)
-			expect(res.message).to.equal('SBAsset6._getFile expects a Uint64BE object for an offset.')
+			expect(res.message).to.equal('SBAsset6._getFile expects a Uint64BE instance for an offset.')
 		})
 
 		it('should throw if passed something other than a Uint64BE for a filelength', async () => {
@@ -156,7 +156,7 @@ describe('SBAsset6', () => {
 				res = err
 			}
 			expect(res).to.be.an.instanceof(TypeError)
-			expect(res.message).to.equal('SBAsset6._getFile expects a Uint64BE object for a filelength.')
+			expect(res.message).to.equal('SBAsset6._getFile expects a Uint64BE instance for a filelength.')
 		})
 
 		it('should correctly get a file from a provided archive', async () => {
@@ -203,7 +203,7 @@ describe('SBAsset6 integration test', () => {
 		expect(res).to.deep.equal(expected)
 
 		expected = await fs.readFile(__dirname + '/samples/universe_server.config.patch', { encoding: 'utf8', flag: 'r' })
-		res = await pak.getFile('/universe_server.config.patch')
+		res = await pak.files.getFile('/universe_server.config.patch')
 		expect(res.toString('utf8')).to.equal(expected)
 	})
 
