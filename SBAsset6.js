@@ -132,8 +132,7 @@ module.exports = class SBAsset6 {
 		let fileTable = {},
 			i = numFiles
 		while(i--) {
-			const pathLength = (await sbuf.read(1)).readUInt8(0)
-			const filePath = (await sbuf.read(pathLength)).toString()
+			const filePath = await SBON.readString(sbuf)
 			const fileOffset = new Uint64BE(await sbuf.read(8))
 			const fileLength = new Uint64BE(await sbuf.read(8))
 			fileTable[filePath] = {
