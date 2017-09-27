@@ -239,11 +239,6 @@ module.exports = class SBAsset6 {
 		await SBON.writeVarInt(sbuf, Object.values(filetable).length)
 
 		for(let file of filetable) {
-			let pathBuffer = Buffer.from(file.path)
-			if(pathBuffer.length > 255) {
-				throw new RangeError('SBAsset6._buildMetatable expects all filetable virtual paths to be under 255 bytes.')
-			}
-
 			if(!(file.offset instanceof Uint64BE)) {
 				throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file offset.')
 			}
@@ -252,11 +247,7 @@ module.exports = class SBAsset6 {
 				throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file length.')
 			}
 
-			let buf = Buffer.alloc(1)
-			buf.writeUint8(pathBuffer.length)
-
-			await sbuf.write(buf)
-			await sbuf.write(file.path)
+			await SBON.writeString(file.path)
 			await sbuf.write(file.offset)
 			await sbuf.write(file.filelength)
 		}
