@@ -131,7 +131,13 @@ module.exports = class SBAsset6 {
 		}
 
 		const metatablePosition = new Uint64BE(newFile.position)
-		SBAsset6._buildMetatable()
+		await sfile.pump(await SBAsset6._buildMetatable())
+
+		// metatable position should always be a Uint64BE found at 0x00000006
+		await fs.write(newFile.fd, metatablePosition.toBuffer(), 0, 8, 6)
+		await newFile.close()
+
+		return this.path + '.tmp'
 	}
 
 	/**
