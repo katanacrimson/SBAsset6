@@ -148,7 +148,7 @@ module.exports = class FileMapper {
 					virtualPath: virtualPath,
 					source: options.fd
 				}
-			} else if(options.path == undefined) {
+			} else if(options.path !== undefined) {
 				fileOptions = {
 					type: 'path',
 					virtualPath: virtualPath,
