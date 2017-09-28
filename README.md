@@ -1,5 +1,9 @@
 # SBAsset6
 
+[![Build Status](https://travis-ci.org/damianb/SBAsset6.svg?branch=master)](https://travis-ci.org/damianb/SBAsset6)
+
+[![js-standard-style](https://cdn.rawgit.com/feross/standard/master/badge.svg)](https://github.com/standard/standard)
+
 ## A node.js library for parsing SBAsset6-formatted files
 
 ### What is SBAsset6?
