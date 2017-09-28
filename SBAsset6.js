@@ -99,13 +99,13 @@ module.exports = class SBAsset6 {
 		// write a placeholder for the metatable position (8 bytes, a Uint64BE)
 		await sfile.pump(Buffer.alloc(8))
 
-		let files = this.files.list(),
-			filetable = []
-		for(const file of files) {
-			const type = this.files.getFileMeta(file)
+		const files = this.files.list(),
+		let filetable = []
+		for(const filename of files) {
+			const file = this.files.getFileMeta(filename)
 
 			let res = null
-			switch(type) {
+			switch(file.type) {
 				case 'pak':
 					res = await sfile.pump(file.source.pak.fd, file.start, file.filelength)
 				break
@@ -131,10 +131,10 @@ module.exports = class SBAsset6 {
 		}
 
 		const metatablePosition = new Uint64BE(newFile.position)
-		await sfile.pump(await SBAsset6._buildMetatable())
+		await sfile.pump(await SBAsset6._buildMetatable(this.metadata, filetable))
 
 		// metatable position should always be a Uint64BE found at 0x00000006
-		await fs.write(newFile.fd, metatablePosition.toBuffer(), 0, 8, 6)
+		await fs.write(newFile.fd, metatablePosition.toBuffer(), 0, 8, 8)
 		await newFile.close()
 
 		return this.path + '.tmp'
@@ -253,9 +253,9 @@ module.exports = class SBAsset6 {
 				throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file length.')
 			}
 
-			await SBON.writeString(file.path)
-			await sbuf.write(file.offset)
-			await sbuf.write(file.filelength)
+			await SBON.writeString(sbuf, file.path)
+			await sbuf.write(file.offset.toBuffer())
+			await sbuf.write(file.filelength.toBuffer())
 		}
 
 		return sbuf.getCurrentBuffer()
