@@ -396,7 +396,8 @@ describe('SBAsset6 integration test', () => {
         }
 
         try {
-          await fs.unlink(path.join(tmpDir, file))
+          // await fs.unlink(path.join(tmpDir, file))
+          // TODO re-enable
         } catch (err) {}
       }
     })
@@ -469,20 +470,75 @@ describe('SBAsset6 integration test', () => {
         })
       }
 
-      let res = await pak.save()
+      const res = await pak.save()
 
       expect(res.metadata).to.deep.equal(pak.metadata)
       expect(res.files).to.deep.equal(Object.keys(files))
 
       for (const file in files) {
-        let virtualFile = (await pak.files.getFile(file)).toString()
-        let expected = await fs.readFile(files[file], { encoding: 'utf8', flag: 'r' })
+        const virtualFile = (await pak.files.getFile(file)).toString()
+        const expected = await fs.readFile(files[file], { encoding: 'utf8', flag: 'r' })
         expect(virtualFile).to.equal(expected)
       }
     })
 
-    xit('should be able to modify an SBAsset6 archive', async () => {
-      //
+    it('should be able to modify an SBAsset6 archive', async () => {
+      const filePath = path.join(tmpDir, '/bigmodtest.pak')
+      const sourcePath = path.join(__dirname, '/samples/ExampleMod/')
+
+      let expected = {
+        metadata: JSON.parse(await fs.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
+        files: {
+          '/items/somefile3.json': path.join(sourcePath, '/items/somefile3.json'),
+          '/items/generic/crafting/somefile7.json': path.join(sourcePath, '/items/generic/crafting/somefile7.json'),
+          '/items/generic/crafting/somefile4.json': path.join(sourcePath, '/items/generic/crafting/somefile4.json'),
+          '/items/blah/somefile.json': path.join(sourcePath, '/items/blah/somefile.json'),
+          '/items/somefile5.json': path.join(sourcePath, '/items/somefile5.json'),
+          '/items/somefile2.json': path.join(sourcePath, '/items/somefile2.json'),
+          '/items/generic/somefile3.json': path.join(sourcePath, '/items/generic/somefile3.json'),
+          '/items/generic/somefile.json': path.join(sourcePath, '/items/generic/somefile.json'),
+          '/items/blah/somefile3.json': path.join(sourcePath, '/items/blah/somefile3.json'),
+          '/items/generic/crafting/somefile.json': path.join(sourcePath, '/items/generic/crafting/somefile.json'),
+          '/items/generic/crafting/somefile9.json': path.join(sourcePath, '/items/generic/crafting/somefile9.json'),
+          '/items/generic/crafting/somefile6.json': path.join(sourcePath, '/items/generic/crafting/somefile6.json'),
+          '/items/generic/crafting/somefile3.json': path.join(sourcePath, '/items/generic/crafting/somefile3.json'),
+          '/items/somefile.json': path.join(sourcePath, '/items/somefile.json'),
+          '/items/somefile4.json': path.join(sourcePath, '/items/somefile4.json'),
+          '/items/generic/somefile2.json': path.join(sourcePath, '/items/generic/somefile2.json'),
+          '/items/blah/somefile2.json': path.join(sourcePath, '/items/blah/somefile2.json'),
+          '/items/generic/crafting/somefile8.json': path.join(sourcePath, '/items/generic/crafting/somefile8.json'),
+          '/items/generic/crafting/somefile5.json': path.join(sourcePath, '/items/generic/crafting/somefile5.json'),
+          '/items/generic/crafting/somefile2.json': path.join(sourcePath, '/items/generic/crafting/somefile2.json'),
+          '/universe_server.config.patch': path.join(__dirname, '/samples/universe_server.config.patch')
+        }
+      }
+      expected.metadata.test = 'success'
+
+      await fs.copy(path.join(__dirname, '/samples/ExampleMod.pak'), filePath)
+
+      const pak = new SBAsset6(filePath)
+      await pak.load()
+
+      pak.metadata.test = 'success'
+
+      await pak.files.setFile('/universe_server.config.patch', {
+        path: path.join(__dirname, '/samples/universe_server.config.patch')
+      })
+
+      const res = await pak.save()
+
+      expect(res.metadata).to.deep.equal(expected.metadata)
+      expect(res.files).to.deep.equal(Object.keys(expected.files))
+
+      for (const file in expected.files) {
+        const virtualFile = (await pak.files.getFile(file)).toString()
+        const expectedContents = await fs.readFile(expected.files[file], { encoding: 'utf8', flag: 'r' })
+        expect(virtualFile).to.equal(expectedContents)
+      }
+    })
+
+    xit('should be able to remove files from an SBAsset6 archive', async () => {
+      // todo
     })
   })
 })
