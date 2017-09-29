@@ -129,15 +129,24 @@ module.exports = class SBAsset6 {
     for (const filename of files) {
       const file = this.files.getFileMeta(filename)
 
+      let start = file.start
+      let filelength = file.filelength
+      if (start instanceof Uint64BE) {
+        start = start.toNumber()
+      }
+      if (filelength instanceof Uint64BE) {
+        filelength = filelength.toNumber()
+      }
+
       let res = null
       switch (file.type) {
         case 'pak':
-          res = await sfile.pump(file.source.pak.fd, file.start, file.filelength)
+          res = await sfile.pump(file.source.pak.fd, start, filelength)
           break
 
         case 'fd':
         case 'path':
-          res = await sfile.pump(file.source, file.start, file.filelength)
+          res = await sfile.pump(file.source, start, filelength)
           break
 
         case 'buffer':
