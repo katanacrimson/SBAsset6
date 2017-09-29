@@ -27,9 +27,9 @@ module.exports = class FileMapper {
   /**
    * Lists all "files" mapped in the FileMapper.
    *
-   * @return {Array} - Array of virtual filepaths that are currently registered within the FileMapper.
+   * @return {Promise:Array} - Array of virtual filepaths that are currently registered within the FileMapper.
    */
-  list () {
+  async list () {
     return Object.keys(this.filetable)
   }
 
@@ -37,19 +37,19 @@ module.exports = class FileMapper {
    * Identifies if a "file" exists at the specified virtualPath.
    *
    * @param  {String} virtualPath - The virtualPath to check for existence.
-   * @return {Boolean}
+   * @return {Promise:Boolean}
    */
-  exists (virtualPath) {
+  async exists (virtualPath) {
     return this.filetable[virtualPath] !== undefined
   }
 
   /**
    * Get the "file" metadata for the specified filepath (basically, where to load the file from).
    * @param  {String} virtualPath - The virtualPath to get metadata for.
-   * @return {Object} - File metadata for loading.
+   * @return {Promise:Object} - File metadata for loading.
    */
-  getFileMeta (virtualPath) {
-    if (!this.exists(virtualPath)) {
+  async getFileMeta (virtualPath) {
+    if (!(await this.exists(virtualPath))) {
       throw new Error('No file exists at the specified virtualPath.')
     }
 
@@ -63,11 +63,11 @@ module.exports = class FileMapper {
    * @return {Promise:Buffer} - The "file" contents, as a Buffer instance.
    */
   async getFile (virtualPath) {
-    if (!this.exists(virtualPath)) {
+    if (!(await this.exists(virtualPath))) {
       throw new Error('No file exists at the specified virtualPath.')
     }
 
-    const options = this.getFileMeta(virtualPath)
+    const options = await this.getFileMeta(virtualPath)
 
     switch (options.type) {
       case 'pak':
@@ -182,9 +182,9 @@ module.exports = class FileMapper {
    * Simply removes the metadata entry; it will just be excluded when the new archive is built.
    *
    * @param  {String} virtualPath - The virtualPath of the file to delete.
-   * @return {undefined}
+   * @return {Promise:undefined}
    */
-  deleteFile (virtualPath) {
+  async deleteFile (virtualPath) {
     if (this.filetable[virtualPath] !== undefined) {
       delete this.filetable[virtualPath]
     }

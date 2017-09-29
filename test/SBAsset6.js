@@ -5,7 +5,7 @@
 // @license MIT license
 // @url <https://github.com/damianb/SBAsset6>
 //
-/* global describe it xit afterEach */
+/* global describe it afterEach */
 'use strict'
 
 const path = require('path')
@@ -386,7 +386,7 @@ describe('SBAsset6 integration test', () => {
     })
   })
 
-  describe.only('SBAsset6 write functionality', () => {
+  describe('SBAsset6 write functionality', () => {
     const tmpDir = path.join(__dirname, '/tmp')
     afterEach(async () => {
       let files = await fs.readdir(tmpDir)
@@ -396,13 +396,15 @@ describe('SBAsset6 integration test', () => {
         }
 
         try {
-          // await fs.unlink(path.join(tmpDir, file))
-          // TODO re-enable
+          await fs.unlink(path.join(tmpDir, file))
         } catch (err) {}
       }
     })
 
-    it('should be able to write a simple SBAsset6 archive', async () => {
+    it('should be able to write a simple SBAsset6 archive (slow running test)', async function () {
+      this.slow(2000)
+      this.timeout(5000)
+
       const filePath = path.join(tmpDir, '/smalltest.pak')
       const metadata = {
         priority: 9999999999
@@ -432,7 +434,10 @@ describe('SBAsset6 integration test', () => {
       }
     })
 
-    it('should be able to write a large SBAsset6 archive', async () => {
+    it('should be able to write a large SBAsset6 archive (slow running test)', async function () {
+      this.slow(2000)
+      this.timeout(5000)
+
       const filePath = path.join(tmpDir, '/bigtest.pak')
       const metadata = {
         priority: 9999999999
@@ -482,7 +487,10 @@ describe('SBAsset6 integration test', () => {
       }
     })
 
-    it('should be able to modify an SBAsset6 archive', async () => {
+    it('should be able to modify an SBAsset6 archive (slow running test)', async function () {
+      this.slow(5000)
+      this.timeout(20000)
+
       const filePath = path.join(tmpDir, '/bigmodtest.pak')
       const sourcePath = path.join(__dirname, '/samples/ExampleMod/')
 
@@ -537,8 +545,58 @@ describe('SBAsset6 integration test', () => {
       }
     })
 
-    xit('should be able to remove files from an SBAsset6 archive', async () => {
-      // todo
+    it('should be able to remove files from an SBAsset6 archive (slow running test)', async function () {
+      this.slow(5000)
+      this.timeout(20000)
+
+      const filePath = path.join(tmpDir, '/bigremtest.pak')
+      const sourcePath = path.join(__dirname, '/samples/ExampleMod/')
+
+      let expected = {
+        metadata: JSON.parse(await fs.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
+        files: {
+          '/items/somefile3.json': path.join(sourcePath, '/items/somefile3.json'),
+          '/items/generic/crafting/somefile7.json': path.join(sourcePath, '/items/generic/crafting/somefile7.json'),
+          '/items/generic/crafting/somefile4.json': path.join(sourcePath, '/items/generic/crafting/somefile4.json'),
+          '/items/somefile5.json': path.join(sourcePath, '/items/somefile5.json'),
+          '/items/somefile2.json': path.join(sourcePath, '/items/somefile2.json'),
+          '/items/generic/somefile3.json': path.join(sourcePath, '/items/generic/somefile3.json'),
+          '/items/generic/somefile.json': path.join(sourcePath, '/items/generic/somefile.json'),
+          '/items/blah/somefile3.json': path.join(sourcePath, '/items/blah/somefile3.json'),
+          '/items/generic/crafting/somefile.json': path.join(sourcePath, '/items/generic/crafting/somefile.json'),
+          '/items/generic/crafting/somefile9.json': path.join(sourcePath, '/items/generic/crafting/somefile9.json'),
+          '/items/generic/crafting/somefile6.json': path.join(sourcePath, '/items/generic/crafting/somefile6.json'),
+          '/items/generic/crafting/somefile3.json': path.join(sourcePath, '/items/generic/crafting/somefile3.json'),
+          '/items/generic/somefile2.json': path.join(sourcePath, '/items/generic/somefile2.json'),
+          '/items/blah/somefile2.json': path.join(sourcePath, '/items/blah/somefile2.json'),
+          '/items/generic/crafting/somefile8.json': path.join(sourcePath, '/items/generic/crafting/somefile8.json'),
+          '/items/generic/crafting/somefile5.json': path.join(sourcePath, '/items/generic/crafting/somefile5.json'),
+          '/items/generic/crafting/somefile2.json': path.join(sourcePath, '/items/generic/crafting/somefile2.json')
+        }
+      }
+      expected.metadata.test = 'success'
+
+      await fs.copy(path.join(__dirname, '/samples/ExampleMod.pak'), filePath)
+
+      const pak = new SBAsset6(filePath)
+      await pak.load()
+
+      pak.metadata.test = 'success'
+
+      await pak.files.deleteFile('/items/somefile.json')
+      await pak.files.deleteFile('/items/somefile4.json')
+      await pak.files.deleteFile('/items/blah/somefile.json')
+
+      const res = await pak.save()
+
+      expect(res.metadata).to.deep.equal(expected.metadata)
+      expect(res.files).to.deep.equal(Object.keys(expected.files))
+
+      for (const file in expected.files) {
+        const virtualFile = (await pak.files.getFile(file)).toString()
+        const expectedContents = await fs.readFile(expected.files[file], { encoding: 'utf8', flag: 'r' })
+        expect(virtualFile).to.equal(expectedContents)
+      }
     })
   })
 })

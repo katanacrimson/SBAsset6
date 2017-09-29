@@ -25,7 +25,9 @@ describe('SBAsset6 regression tests', () => {
         continue
       }
 
-      await fs.unlink(path.join(tmpDir, file))
+      try {
+        await fs.unlink(path.join(tmpDir, file))
+      } catch (err) {}
     }
   })
 

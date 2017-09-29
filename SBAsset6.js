@@ -63,7 +63,7 @@ module.exports = class SBAsset6 {
     // return the important metatable info.
     return {
       metadata: this.metadata,
-      files: this.files.list()
+      files: await this.files.list()
     }
   }
 
@@ -124,10 +124,10 @@ module.exports = class SBAsset6 {
     // write a placeholder for the metatable position (8 bytes, a Uint64BE)
     await sfile.pump(Buffer.alloc(8))
 
-    const files = this.files.list()
+    const files = await this.files.list()
     let filetable = []
     for (const filename of files) {
-      const file = this.files.getFileMeta(filename)
+      const file = await this.files.getFileMeta(filename)
 
       let start = file.start
       let filelength = file.filelength
