@@ -158,7 +158,7 @@ module.exports = class SBAsset6 {
     const metatablePosition = new Uint64BE(newFile.position)
     await sfile.pump(await SBAsset6._buildMetatable(this.metadata, filetable))
 
-    // metatable position should always be a Uint64BE found at 0x00000006
+    // metatable position should always be a Uint64BE found at 0x00000008
     await fs.write(newFile.fd, metatablePosition.toBuffer(), 0, 8, 8)
     await newFile.close()
     await this.close()
@@ -268,24 +268,36 @@ module.exports = class SBAsset6 {
   /**
    * Builds the metatable used for SBAsset6 archives.
    *
-   * @param  {Object} metadata  [description]
-   * @param  {[type]} filetable [description]
+   * @param  {Object} metadata - The object containing the metadata for the SBasset6 archive.
+   * @param  {Array} filetable - Array of objects representing the filetable.
+   *   Each entry should contain a virtual path, a Uint64BE instance for an offset, and a Uint64BE instance of a filelength.
    * @return {Promise:Buffer} - The Buffer instance containing the exact SBAsset6 archive.
    */
   static async _buildMetatable (metadata, filetable) {
     let sbuf = new ExpandingBuffer()
+
+    if (metadata === null || typeof metadata !== 'object') {
+      throw new TypeError('SBAsset6._buildMetatable expects the metadata to be an object.')
+    }
+    if (!Array.isArray(filetable)) {
+      throw new TypeError('SBAsset6._buildMetatable expects the filetable to be an array.')
+    }
 
     await sbuf.write('INDEX')
     await SBON.writeMap(sbuf, metadata)
     await SBON.writeVarInt(sbuf, Object.values(filetable).length)
 
     for (let file of filetable) {
+      if (!file.path || typeof file.path !== 'string') {
+        throw new TypeError('SBAsset6._buildMetatable expects filetable entries to provide string for the represented file\'s virtual path.')
+      }
+
       if (!(file.offset instanceof Uint64BE)) {
-        throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file offset.')
+        throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file\'s offset.')
       }
 
       if (!(file.filelength instanceof Uint64BE)) {
-        throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file length.')
+        throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file\'s length.')
       }
 
       await SBON.writeString(sbuf, file.path)
