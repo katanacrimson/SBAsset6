@@ -28,12 +28,13 @@ describe('SBAsset6 regression tests', () => {
       await fs.unlink(path.join(tmpDir, file))
     }
   })
+
   it('rtest-i#4: non-JSON files should not be corrupted on read', async () => {
     const hash1 = crypto.createHash('sha256')
     const hash2 = crypto.createHash('sha256')
 
     let samplePath = path.join(__dirname, '/regression/rt-i4')
-    let pak = new SBAsset6(path.join(__dirname, '/rt-i4.pak'))
+    let pak = new SBAsset6(path.join(samplePath, '/rt-i4.pak'))
     await pak.load()
     let sample = await pak.files.getFile('/sfx/white_noise.ogg')
 
