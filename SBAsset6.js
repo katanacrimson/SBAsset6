@@ -38,7 +38,7 @@ module.exports = class SBAsset6 {
    * Loads the archive, parses everything out and then provides access to the archive files and metadata.
    * This is a convenience method for the common workflow of loading the archive.
    *
-   * @return {Promise:Object} - An object containing the metadata and all files contained in the archive that can be read out.
+   * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
    */
   async load () {
     // first, open the pak file up
@@ -107,8 +107,9 @@ module.exports = class SBAsset6 {
 
   /**
    * Save the currently generated SBAsset6 archive.
+   * Reloads the archive and rebuilds the FileMapper when saving is complete.
    *
-   * @return {[type]} [description]
+   * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
    */
   async save () {
     const newFile = new ExpandingFile(this.path + '.tmp')
