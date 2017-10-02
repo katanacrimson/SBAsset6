@@ -9,7 +9,6 @@
 
 const fs = require('fs-extra')
 const { Uint64BE } = require('int64-buffer')
-// const ExpandingFile = require('ExpandingFile')
 
 //
 // FileMapper - provides an abstraction around SBAsset6 file tables for sensibly managing files contained within the archive
@@ -45,6 +44,8 @@ module.exports = class FileMapper {
 
   /**
    * Get the "file" metadata for the specified filepath (basically, where to load the file from).
+   *
+   * @private
    * @param  {String} virtualPath - The virtualPath to get metadata for.
    * @return {Promise:Object} - File metadata for loading.
    */
