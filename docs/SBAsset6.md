@@ -82,6 +82,8 @@ Does not save changes!
 
 * @return {Promise:undefined}
 
+**NOTE:** Should be called when done with the archive.  Don't hog file handles, people.
+
 ``` js
 async () => {
 	const filepath = '/path/to/mod.pak'
