@@ -4,7 +4,7 @@
   "description": "SBAsset6 parsing library",
   "main": "SBAsset6.js",
   "scripts": {
-    "test": "mocha"
+    "test": "standard && mocha"
   },
   "repository": {
     "type": "git",
@@ -23,12 +23,16 @@
   "dependencies": {
     "ConsumableBuffer": "github:damianb/ConsumableBuffer",
     "ConsumableFile": "github:damianb/ConsumableFile",
+    "ExpandingBuffer": "github:damianb/ExpandingBuffer",
+    "ExpandingFile": "github:damianb/ExpandingFile",
     "SBON": "github:damianb/SBON",
-    "fs-extra": "^4.0.1",
+    "StreamPipeline": "github:damianb/streampipeline",
+    "fs-extra": "^4.0.2",
     "int64-buffer": "^0.1.9"
   },
   "devDependencies": {
     "chai": "^4.1.2",
-    "mocha": "^3.5.2"
+    "mocha": "^3.5.3",
+    "standard": "^10.0.3"
   }
 }

@@ -36,6 +36,18 @@ const readPak = async (pak) => {
 readPak(pak)
 ```
 
+## Properties
+
+### SBAsset6.metadata
+
+An Object containing all metadata relevant to the archive - this is normally stored in a \_metadata file then parsed out when packing the mod.
+
+### SBAsset6.files
+
+A FileMapper instance that abstracts out the files in the archive.
+
+See the FileMapper documentation for more information.
+
 ## Methods
 
 ### new SBAsset6(path)
@@ -52,7 +64,7 @@ See usage above.
 Loads the archive, parses everything out and then provides access to the archive files and metadata.
 This is a convenience method for the common workflow of loading the archive.
 
-* @return {Promise:object} - An object containing the metadata and all files contained in the archive that can be read out.
+* @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
 
 ``` js
 async () => {
@@ -63,21 +75,68 @@ async () => {
 }
 ```
 
-### SBAsset6.getFile(filename)
+### SBAsset6.close()
 
-Get a specific file from the archive.
+Close the SBAsset6 archive and flush everything from memory.
+Does not save changes!
 
-* @param  {String} filename - The path to the file inside the archive that we want.
-* @return {Promise:Buffer} - The contents of the file we want to fetch.
+* @return {Promise:undefined}
+
+**NOTE:** Should be called when done with the archive.  Don't hog file handles, people.
 
 ``` js
 async () => {
 	const filepath = '/path/to/mod.pak'
-	const pak = new SBAsset6()
+	const pak = new SBAsset6(filepath)
 	const { metadata, files } = await pak.load()
-	// gotta load metatable before we can get files...
+	// you know have access to metadata and files. yay!
 
-	const modFileInPak = '/file/inside/pak.config'
-	const fileContents = (await pak.getFile(modFileInPak)).toString('utf8')
+	// ...
+
+	// all done here. time to clean up and release resources.
+
+	await pak.close()
+}
+```
+
+### SBAsset6.isLoaded()
+
+Get whether or not the pak itself has been "loaded" from the filesystem.
+Instances that are *going* to be created will be considered "unloaded" as no original pak exists.
+
+* @return {Promise:Boolean}
+
+``` js
+async () => {
+	const filepath = '/path/to/mod.pak'
+	const pak = new SBAsset6(filepath)
+	const { metadata, files } = await pak.load()
+	// you know have access to metadata and files. yay!
+
+	// ...
+
+	// wait, did we load the pak earlier? has it been closed since? let's check...
+	const isOpen = await pak.isLoaded()
+}
+```
+
+### SBAsset6.save()
+
+Save the currently generated SBAsset6 archive.
+Reloads the archive and rebuilds the FileMapper instance when saving is complete.
+
+* @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
+
+``` js
+async () => {
+	const filepath = '/path/to/mod.pak'
+	const pak = new SBAsset6(filepath)
+	await pak.load()
+
+	// This pak's description was too long. Let's change it.
+	pak.metadata.description = 'Shorter description.'
+
+	// Need to save our changes now...
+	return pak.save()
 }
 ```
