@@ -64,7 +64,7 @@ See usage above.
 Loads the archive, parses everything out and then provides access to the archive files and metadata.
 This is a convenience method for the common workflow of loading the archive.
 
-* @return {Promise:Object} - An object containing the metadata and all files contained in the archive that can be read out.
+* @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
 
 ``` js
 async () => {
@@ -117,5 +117,26 @@ async () => {
 
 	// wait, did we load the pak earlier? has it been closed since? let's check...
 	const isOpen = await pak.isLoaded()
+}
+```
+
+### SBAsset6.save()
+
+Save the currently generated SBAsset6 archive.
+Reloads the archive and rebuilds the FileMapper instance when saving is complete.
+
+* @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
+
+``` js
+async () => {
+	const filepath = '/path/to/mod.pak'
+	const pak = new SBAsset6(filepath)
+	await pak.load()
+
+	// This pak's description was too long. Let's change it.
+	pak.metadata.description = 'Shorter description.'
+
+	// Need to save our changes now...
+	return pak.save()
 }
 ```
