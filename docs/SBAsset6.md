@@ -48,6 +48,10 @@ A FileMapper instance that abstracts out the files in the archive.
 
 See the FileMapper documentation for more information.
 
+### SBAsset6.progress
+
+An EventEmitter instance that emits specific events during the saving and loading process to allow for more observability when unpacking or packing large files.
+
 ## Methods
 
 ### new SBAsset6(path)
@@ -75,6 +79,18 @@ async () => {
 }
 ```
 
+#### SBAsset6.progress events emitted
+
+For all, `message` describes the event.
+
+* `load.start` - `{ message, target }` - `target` is the archive we're trying to load.
+* `load.header` - `{ message }`
+* `load.metatable` - `{ message }`
+* `load.files` - `{ message, total }` - `total` is the total number of files found in the archive.
+* `load.file.progress` - `{ message, target, index }` - `target` is the virtualPath the file whose metadata we're loading into the FileMapper,
+and `index` tells us how many files in we are (X, where "File X of Y").
+* `load.done` - `{ message }`
+
 ### SBAsset6.close()
 
 Close the SBAsset6 archive and flush everything from memory.
@@ -98,6 +114,12 @@ async () => {
 	await pak.close()
 }
 ```
+
+#### SBAsset6.progress events emitted
+
+For all, `message` describes the event.
+
+* `close` - `{ message }`
 
 ### SBAsset6.isLoaded()
 
@@ -140,3 +162,15 @@ async () => {
 	return pak.save()
 }
 ```
+
+#### SBAsset6.progress events emitted
+
+For all, `message` describes the event.
+
+* `save.start` - `{ message, target }` - `target` is the archive we're trying to save to.
+* `save.header` - `{ message }`
+* `save.files` - `{ message, total }` - `total` is the total number of files being written to the archive.
+* `save.file.progress` - `{ message, target, index }` - `target` is the virtualPath the file that we're writing to the archive,
+and `index` tells us how many files in we are (X, where "File X of Y").
+* `save.metatable` - `{ message }`
+* `save.done` - `{ message }`

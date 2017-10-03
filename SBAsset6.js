@@ -7,6 +7,7 @@
 //
 'use strict'
 
+const EventEmitter = require('events')
 const fs = require('fs-extra')
 const { Uint64BE } = require('int64-buffer')
 const ConsumableBuffer = require('ConsumableBuffer')
@@ -32,6 +33,7 @@ module.exports = class SBAsset6 {
     this.pak = this.metatablePosition = null
     this.metadata = null
     this.files = new FileMapper()
+    this.progress = new EventEmitter()
   }
 
   /**
@@ -43,15 +45,21 @@ module.exports = class SBAsset6 {
   async load () {
     // first, open the pak file up
     this.pak = new ConsumableFile(this.path)
+    this.progress.emit('load.start', { message: 'Loading archive file', target: this.path })
     await this.pak.open()
 
     // read/verify the header
+    this.progress.emit('load.header', { message: 'Reading archive header' })
     this.metatablePosition = await SBAsset6._readHeader(this.pak)
 
     // extract the metatable
+    this.progress.emit('load.metatable', { message: 'Reading archive metatable' })
     const meta = await SBAsset6._readMetatable(this.pak, this.metatablePosition)
 
-    for (const fileEntry of meta.filetable) {
+    this.progress.emit('load.files', { message: 'Loading archive file data into FileMapper', total: meta.filetable.length })
+    for (const i in meta.filetable) {
+      const fileEntry = meta.filetable[i]
+      this.progress.emit('load.file.progress', { message: 'Loading file into FileMapper', target: fileEntry.path, index: i })
       await this.files.setFile(fileEntry.path, {
         pak: this,
         start: fileEntry.offset,
@@ -61,6 +69,7 @@ module.exports = class SBAsset6 {
     this.metadata = meta.metadata
 
     // return the important metatable info.
+    this.progress.emit('load.done', { message: 'Loading archive file complete' })
     return {
       metadata: this.metadata,
       files: await this.files.list()
@@ -75,6 +84,7 @@ module.exports = class SBAsset6 {
    */
   async close () {
     if (this.pak !== null) {
+      this.progress.emit('close', { message: 'Closing archive file' })
       await this.pak.close()
     }
     this.pak = this.metatablePosition = this.metadata = null
@@ -113,6 +123,7 @@ module.exports = class SBAsset6 {
    */
   async save () {
     const newFile = new ExpandingFile(this.path + '.tmp')
+    this.progress.emit('save.start', { message: 'Opening destination archive file', target: this.path })
     await newFile.open()
 
     // set up the Stream Pipeline...
@@ -120,6 +131,7 @@ module.exports = class SBAsset6 {
     await sfile.load(newFile)
 
     // write the header
+    this.progress.emit('save.header', { message: 'Writing archive header' })
     await sfile.pump(Buffer.from('SBAsset6'))
 
     // write a placeholder for the metatable position (8 bytes, a Uint64BE)
@@ -127,7 +139,9 @@ module.exports = class SBAsset6 {
 
     const files = await this.files.list()
     let filetable = []
-    for (const filename of files) {
+    this.progress.emit('save.files', { message: 'Writing files to archive', total: files.length })
+    for (const i in files) {
+      const filename = files[i]
       const file = await this.files.getFileMeta(filename)
 
       let start = file.start
@@ -140,6 +154,7 @@ module.exports = class SBAsset6 {
       }
 
       let res = null
+      this.progress.emit('save.file.progress', { message: 'Writing file to archive', target: file.virtualPath, type: file.type, index: i })
       switch (file.type) {
         case 'pak':
           res = await sfile.pump(file.source.pak.fd, start, filelength)
@@ -165,6 +180,7 @@ module.exports = class SBAsset6 {
       })
     }
 
+    this.progress.emit('save.metatable', { message: 'Writing archive metatable' })
     const metatablePosition = new Uint64BE(newFile.position)
     await sfile.pump(await SBAsset6._buildMetatable(this.metadata, filetable))
 
@@ -173,6 +189,7 @@ module.exports = class SBAsset6 {
     await newFile.close()
     await this.close()
 
+    this.progress.emit('save.done', { message: 'Saving archive file complete' })
     await fs.move(this.path + '.tmp', this.path, { overwrite: true })
 
     return this.load()
