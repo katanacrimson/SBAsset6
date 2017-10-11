@@ -7,31 +7,54 @@
 //
 'use strict'
 
-const EventEmitter = require('events')
-const fs = require('fs-extra')
-const { Uint64BE } = require('int64-buffer')
-const ConsumableBuffer = require('ConsumableBuffer')
-const ConsumableFile = require('ConsumableFile')
-const ExpandingBuffer = require('ExpandingBuffer')
-const ExpandingFile = require('ExpandingFile')
-const StreamPipeline = require('StreamPipeline')
-const SBON = require('SBON')
-const FileMapper = require('./FileMapper')
+import { EventEmitter } from 'events'
+import * as fs from 'fs-extra'
+import { Uint64BE } from 'int64-buffer'
+import { ConsumableBuffer } from 'ConsumableBuffer'
+import { ConsumableFile } from 'ConsumableFile'
+import { ExpandingBuffer } from 'ExpandingBuffer'
+import { ExpandingFile } from 'ExpandingFile'
+import { StreamPipeline } from 'StreamPipeline'
+import { SBON } from 'SBON'
+import { FileMapper } from './FileMapper'
+
+export interface LoadResult {
+  metadata: { [index:string] : any }
+  files: Array<string>
+}
+
+export interface Metatable {
+  metadata: { [index:string] : any }
+  filetable: Array<FileTableEntry>
+}
+
+export interface FileTableEntry {
+  path: string
+  offset: Uint64BE
+  filelength: Uint64BE
+}
 
 //
 // SBAsset6 - provides an abstraction around reading/interacting with SBAsset6 archives (also known as Starbound "pak" files)
 //
-module.exports = class SBAsset6 {
+export class SBAsset6 {
+  path: string
+  file: ConsumableFile | undefined
+  metatablePosition: Uint64BE | undefined
+  metadata: { [index:string] : any }
+  files: FileMapper
+  progress: EventEmitter
+
   /**
    * SBAsset6 Constructor
    *
    * @param  {String} path - The filepath for the archive we're going to work with.
    * @return {SBAsset6}
    */
-  constructor (path) {
+  constructor (path: string) {
     this.path = path
-    this.pak = this.metatablePosition = null
-    this.metadata = null
+    this.file = this.metatablePosition = undefined
+    this.metadata = {}
     this.files = new FileMapper()
     this.progress = new EventEmitter()
   }
@@ -42,26 +65,28 @@ module.exports = class SBAsset6 {
    *
    * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
    */
-  async load () {
+  async load (): Promise<LoadResult> {
     // first, open the pak file up
-    this.pak = new ConsumableFile(this.path)
+    this.file = new ConsumableFile(this.path)
     this.progress.emit('load.start', { message: 'Loading archive file', target: this.path })
-    await this.pak.open()
+    await this.file.open()
 
     // read/verify the header
     this.progress.emit('load.header', { message: 'Reading archive header' })
-    this.metatablePosition = await SBAsset6._readHeader(this.pak)
+    this.metatablePosition = await SBAsset6._readHeader(this.file)
 
     // extract the metatable
     this.progress.emit('load.metatable', { message: 'Reading archive metatable' })
-    const meta = await SBAsset6._readMetatable(this.pak, this.metatablePosition)
+    const meta = await SBAsset6._readMetatable(this.file, this.metatablePosition)
 
     this.progress.emit('load.files', { message: 'Loading archive file data into FileMapper', total: meta.filetable.length })
     for (const i in meta.filetable) {
       const fileEntry = meta.filetable[i]
       this.progress.emit('load.file.progress', { message: 'Loading file into FileMapper', target: fileEntry.path, index: i })
       await this.files.setFile(fileEntry.path, {
-        pak: this,
+        source: {
+          pak: this
+        },
         start: fileEntry.offset,
         filelength: fileEntry.filelength
       })
@@ -80,14 +105,15 @@ module.exports = class SBAsset6 {
    * Close the SBAsset6 archive and flush everything from memory.
    * Does not save changes!
    *
-   * @return {Promise:undefined}
+   * @return {Promise:void}
    */
-  async close () {
-    if (this.pak !== null) {
+  async close (): Promise<void> {
+    if (this.file) {
       this.progress.emit('close', { message: 'Closing archive file' })
-      await this.pak.close()
+      await this.file.close()
     }
-    this.pak = this.metatablePosition = this.metadata = null
+    this.file = this.metatablePosition = undefined
+    this.metadata = {}
     this.files = new FileMapper()
 
     return undefined
@@ -99,8 +125,8 @@ module.exports = class SBAsset6 {
    *
    * @return {Promise:Boolean}
    */
-  async isLoaded () {
-    return (this.pak !== null && this.pak !== undefined)
+  async isLoaded (): Promise<boolean> {
+    return this.file !== undefined
   }
 
   /**
@@ -111,8 +137,12 @@ module.exports = class SBAsset6 {
    * @param  {Uint64BE} size - The amount of data to fetch.
    * @return {Promise:Buffer} - The data we're looking for.
    */
-  async getPakData (offset, size) {
-    return SBAsset6._getFile(this.pak, offset, size)
+  async getPakData (offset: Uint64BE, size: Uint64BE): Promise<Buffer> {
+    if(!this.file) {
+      throw new Error('Cannot read from unopened pak in SBAsset6.getPakData')
+    }
+
+    return SBAsset6._getFile(this.file, offset, size)
   }
 
   /**
@@ -121,7 +151,7 @@ module.exports = class SBAsset6 {
    *
    * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
    */
-  async save () {
+  async save (): Promise<LoadResult> {
     const newFile = new ExpandingFile(this.path + '.tmp')
     this.progress.emit('save.start', { message: 'Opening destination archive file', target: this.path })
     await newFile.open()
@@ -144,33 +174,33 @@ module.exports = class SBAsset6 {
       const filename = files[i]
       const file = await this.files.getFileMeta(filename)
 
-      let start = file.start
-      let filelength = file.filelength
-      if (start instanceof Uint64BE) {
-        start = start.toNumber()
-      }
-      if (filelength instanceof Uint64BE) {
-        filelength = filelength.toNumber()
-      }
+      let start = (file.start instanceof Uint64BE) ? file.start.toNumber() : file.start
+      let filelength = (file.filelength instanceof Uint64BE) ? file.filelength.toNumber() : file.filelength
 
       let res = null
       this.progress.emit('save.file.progress', { message: 'Writing file to archive', target: file.virtualPath, type: file.type, index: i })
       switch (file.type) {
         case 'pak':
-          res = await sfile.pump(file.source.pak.fd, start, filelength)
+          if(!file.source.pak || !file.source.pak.file) {
+            throw new Error('Could not load file from SBAsset6 archive while saving.')
+          }
+          res = await sfile.pump(file.source.pak.file.fd, start, filelength)
           break
 
         case 'fd':
+          res = await sfile.pump(file.source.fd, start, filelength)
+          break
+
         case 'path':
-          res = await sfile.pump(file.source, start, filelength)
+          res = await sfile.pump(file.source.path, start, filelength)
           break
 
         case 'buffer':
-          res = await sfile.pump(file.source)
+          res = await sfile.pump(file.source.buffer)
           break
 
         default:
-          throw new TypeError('oops')
+          throw new TypeError('Unrecognized FileTableEntry type in SBAsset6.save')
       }
 
       filetable.push({
@@ -202,11 +232,7 @@ module.exports = class SBAsset6 {
    * @param {ConsumableBuffer|ConsumableFile} sbuf - The stream to read from.
    * @return {Promise:Uint64BE} - A Big-endian Uint64 value containing the file offset for the archive metatable.
    */
-  static async _readHeader (sbuf) {
-    if (!(sbuf instanceof ConsumableBuffer || sbuf instanceof ConsumableFile)) {
-      throw new TypeError('SBAsset6._readHeader expects a ConsumableBuffer or ConsumableFile.')
-    }
-
+  static async _readHeader (sbuf: ConsumableBuffer|ConsumableFile): Promise<Uint64BE> {
     // grab the first 8 bytes - this should be a standard SBAsset6 pak header
     // we'll compare it to what we expect to verify that this *is* an SBAsset6 file
     if (Buffer.compare(await sbuf.read(8), Buffer.from('SBAsset6')) !== 0) {
@@ -225,17 +251,9 @@ module.exports = class SBAsset6 {
    * @param  {Uint64BE} metatablePosition - The Uint64BE containing the metatable location within the archive.
    * @return {Promise:Object} - An Object that contains the metadata and filetable of the archive.
    */
-  static async _readMetatable (sbuf, metatablePosition) {
-    if (!(sbuf instanceof ConsumableBuffer || sbuf instanceof ConsumableFile)) {
-      throw new TypeError('SBAsset6._readMetatable expects a ConsumableBuffer or ConsumableFile.')
-    }
-
-    if (!(metatablePosition instanceof Uint64BE)) {
-      throw new TypeError('SBAsset6._readMetatable expects a Uint64BE object for a metatablePosition.')
-    }
-
+  static async _readMetatable (sbuf: ConsumableBuffer|ConsumableFile, metatablePosition: Uint64BE): Promise<Metatable> {
     // head to the metatable!
-    await sbuf.aseek(metatablePosition)
+    await sbuf.aseek(metatablePosition.toNumber())
 
     // verify that we've found the metatable as expected
     if (Buffer.compare(await sbuf.read(5), Buffer.from('INDEX')) !== 0) {
@@ -270,26 +288,15 @@ module.exports = class SBAsset6 {
 
   /**
    * Gets a file of specified length from a specific offset within the archive.
+   *
    * @param  {ConsumableBuffer|ConsumableFile} sbuf - The stream to read from.
    * @param  {Uint64BE} offset - Offset in bytes of the file's location in the archive.
    * @param  {Uint64BE} filelength - Length in bytes for the file.
    * @return {Promise:Buffer} - The buffer containing the contents of the specified file.
    */
-  static async _getFile (sbuf, offset, filelength) {
-    if (!(sbuf instanceof ConsumableBuffer || sbuf instanceof ConsumableFile)) {
-      throw new TypeError('SBAsset6._getFile expects a ConsumableBuffer or ConsumableFile.')
-    }
-
-    if (!(offset instanceof Uint64BE)) {
-      throw new TypeError('SBAsset6._getFile expects a Uint64BE instance for an offset.')
-    }
-
-    if (!(filelength instanceof Uint64BE)) {
-      throw new TypeError('SBAsset6._getFile expects a Uint64BE instance for a filelength.')
-    }
-
-    await sbuf.aseek(offset)
-    return sbuf.read(filelength)
+  static async _getFile (sbuf: ConsumableBuffer|ConsumableFile, offset: Uint64BE, filelength: Uint64BE): Promise<Buffer> {
+    await sbuf.aseek(offset.toNumber())
+    return sbuf.read(filelength.toNumber())
   }
 
   /**
@@ -300,7 +307,7 @@ module.exports = class SBAsset6 {
    *   Each entry should contain a virtual path, a Uint64BE instance for an offset, and a Uint64BE instance of a filelength.
    * @return {Promise:Buffer} - The Buffer instance containing the exact SBAsset6 archive.
    */
-  static async _buildMetatable (metadata, filetable) {
+  static async _buildMetatable (metadata: { [index:string]: any }, filetable: Array<FileTableEntry>) {
     let sbuf = new ExpandingBuffer()
 
     if (metadata === null || typeof metadata !== 'object') {
@@ -315,18 +322,6 @@ module.exports = class SBAsset6 {
     await SBON.writeVarInt(sbuf, Object.values(filetable).length)
 
     for (let file of filetable) {
-      if (!file.path || typeof file.path !== 'string') {
-        throw new TypeError('SBAsset6._buildMetatable expects filetable entries to provide string for the represented file\'s virtual path.')
-      }
-
-      if (!(file.offset instanceof Uint64BE)) {
-        throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file\'s offset.')
-      }
-
-      if (!(file.filelength instanceof Uint64BE)) {
-        throw new TypeError('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file\'s length.')
-      }
-
       await SBON.writeString(sbuf, file.path)
       await sbuf.write(file.offset.toBuffer())
       await sbuf.write(file.filelength.toBuffer())

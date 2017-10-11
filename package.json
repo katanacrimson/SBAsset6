@@ -2,9 +2,15 @@
   "name": "SBAsset6",
   "version": "2.0.1",
   "description": "SBAsset6 parsing library",
-  "main": "SBAsset6.js",
+  "main": "build/SBAsset6.js",
+  "types": "build/SBAsset6.d.ts",
   "scripts": {
-    "test": "standard && mocha"
+    "style": "standard *.ts",
+    "unit": "mocha --compilers ts:ts-node/register ./test/*.spec.ts",
+    "regression": "mocha --compilers ts:ts-node/register ./test/*.regression.ts",
+    "test": "npm run unit && npm run regression",
+    "build": "tsc",
+    "qc": "npm run build && npm run style && npm run unit && npm run regression"
   },
   "repository": {
     "type": "git",
@@ -34,5 +40,11 @@
     "chai": "^4.1.2",
     "mocha": "^3.5.3",
     "standard": "^10.0.3"
+  },
+  "standard": {
+    "parser": "typescript-eslint-parser",
+    "plugins": [
+      "typescript"
+    ]
   }
 }
