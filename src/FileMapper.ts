@@ -39,7 +39,7 @@ export interface FileTableInput {
 // FileMapper - provides an abstraction around SBAsset6 file tables for sensibly managing files contained within the archive
 //
 export class FileMapper {
-  filetable: { [index:string] : FileMapperEntry }
+  filetable: { [index: string]: FileMapperEntry }
   /**
    * FileMapper Constructor
    *
@@ -65,7 +65,7 @@ export class FileMapper {
    * @return {Promise:Boolean}
    */
   async exists (virtualPath: string): Promise<boolean> {
-    return this.filetable[virtualPath] !== undefined
+    return !!this.filetable[virtualPath]
   }
 
   /**
@@ -102,7 +102,7 @@ export class FileMapper {
       }
 
       return options.source.pak.getPakData(options.start, options.filelength)
-    } else if(options.source.path || options.source.fd) {
+    } else if (options.source.path || options.source.fd) {
       let fd: number = 0
       if (options.source.path) {
         fd = await fs.open(options.source.path, 'r')
@@ -113,7 +113,7 @@ export class FileMapper {
       let { size } = await fs.fstat(fd)
       const position = options.start ? options.start.toNumber() : 0
       let maxRead = position - size
-      if(options.filelength && options.filelength.toNumber() < maxRead) {
+      if (options.filelength && options.filelength.toNumber() < maxRead) {
         maxRead = options.filelength.toNumber()
       }
 
@@ -124,7 +124,7 @@ export class FileMapper {
       }
 
       return buffer
-    } else if(options.source.buffer) {
+    } else if (options.source.buffer) {
       return options.source.buffer
     } else {
       throw new TypeError('Cannot get specified file\'s contents.')
@@ -152,7 +152,7 @@ export class FileMapper {
         type: 'pak',
         virtualPath: virtualPath,
         source: {
-          pak: options.source.pak,
+          pak: options.source.pak
         },
         start: options.start || undefined,
         filelength: options.filelength || undefined
@@ -169,7 +169,7 @@ export class FileMapper {
       }
     } else if (options.source.path) {
       fileOptions = {
-        type: 'fd',
+        type: 'path',
         virtualPath: virtualPath,
         source: {
           path: options.source.path
@@ -191,7 +191,7 @@ export class FileMapper {
 
     this.filetable[virtualPath] = fileOptions
 
-    return undefined
+    return
   }
 
   /**
@@ -202,10 +202,10 @@ export class FileMapper {
    * @return {Promise:void}
    */
   async deleteFile (virtualPath: string): Promise<void> {
-    if (this.filetable[virtualPath] !== undefined) {
+    if (await this.exists(virtualPath)) {
       delete this.filetable[virtualPath]
     }
 
-    return undefined
+    return
   }
 }

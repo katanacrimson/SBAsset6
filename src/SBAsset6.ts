@@ -19,12 +19,12 @@ import { SBON } from 'SBON'
 import { FileMapper } from './FileMapper'
 
 export interface LoadResult {
-  metadata: { [index:string] : any }
+  metadata: { [index: string]: any }
   files: Array<string>
 }
 
 export interface Metatable {
-  metadata: { [index:string] : any }
+  metadata: { [index: string]: any }
   filetable: Array<FileTableEntry>
 }
 
@@ -41,7 +41,7 @@ export class SBAsset6 {
   path: string
   file: ConsumableFile | undefined
   metatablePosition: Uint64BE | undefined
-  metadata: { [index:string] : any }
+  metadata: { [index: string]: any }
   files: FileMapper
   progress: EventEmitter
 
@@ -57,172 +57,6 @@ export class SBAsset6 {
     this.metadata = {}
     this.files = new FileMapper()
     this.progress = new EventEmitter()
-  }
-
-  /**
-   * Loads the archive, parses everything out and then provides access to the archive files and metadata.
-   * This is a convenience method for the common workflow of loading the archive.
-   *
-   * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
-   */
-  async load (): Promise<LoadResult> {
-    // first, open the pak file up
-    this.file = new ConsumableFile(this.path)
-    this.progress.emit('load.start', { message: 'Loading archive file', target: this.path })
-    await this.file.open()
-
-    // read/verify the header
-    this.progress.emit('load.header', { message: 'Reading archive header' })
-    this.metatablePosition = await SBAsset6._readHeader(this.file)
-
-    // extract the metatable
-    this.progress.emit('load.metatable', { message: 'Reading archive metatable' })
-    const meta = await SBAsset6._readMetatable(this.file, this.metatablePosition)
-
-    this.progress.emit('load.files', { message: 'Loading archive file data into FileMapper', total: meta.filetable.length })
-    for (const i in meta.filetable) {
-      const fileEntry = meta.filetable[i]
-      this.progress.emit('load.file.progress', { message: 'Loading file into FileMapper', target: fileEntry.path, index: i })
-      await this.files.setFile(fileEntry.path, {
-        source: {
-          pak: this
-        },
-        start: fileEntry.offset,
-        filelength: fileEntry.filelength
-      })
-    }
-    this.metadata = meta.metadata
-
-    // return the important metatable info.
-    this.progress.emit('load.done', { message: 'Loading archive file complete' })
-    return {
-      metadata: this.metadata,
-      files: await this.files.list()
-    }
-  }
-
-  /**
-   * Close the SBAsset6 archive and flush everything from memory.
-   * Does not save changes!
-   *
-   * @return {Promise:void}
-   */
-  async close (): Promise<void> {
-    if (this.file) {
-      this.progress.emit('close', { message: 'Closing archive file' })
-      await this.file.close()
-    }
-    this.file = this.metatablePosition = undefined
-    this.metadata = {}
-    this.files = new FileMapper()
-
-    return undefined
-  }
-
-  /**
-   * Get whether or not the pak itself has been "loaded" from the filesystem.
-   * Instances that are *going* to be created will be considered "unloaded" as no original pak exists.
-   *
-   * @return {Promise:Boolean}
-   */
-  async isLoaded (): Promise<boolean> {
-    return this.file !== undefined
-  }
-
-  /**
-   * Gets a specific chunk of data from the pak file we're working with.
-   *
-   * @private
-   * @param  {Uint64BE} offset - How far into the pak to seek to.
-   * @param  {Uint64BE} size - The amount of data to fetch.
-   * @return {Promise:Buffer} - The data we're looking for.
-   */
-  async getPakData (offset: Uint64BE, size: Uint64BE): Promise<Buffer> {
-    if(!this.file) {
-      throw new Error('Cannot read from unopened pak in SBAsset6.getPakData')
-    }
-
-    return SBAsset6._getFile(this.file, offset, size)
-  }
-
-  /**
-   * Save the currently generated SBAsset6 archive.
-   * Reloads the archive and rebuilds the FileMapper when saving is complete.
-   *
-   * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
-   */
-  async save (): Promise<LoadResult> {
-    const newFile = new ExpandingFile(this.path + '.tmp')
-    this.progress.emit('save.start', { message: 'Opening destination archive file', target: this.path })
-    await newFile.open()
-
-    // set up the Stream Pipeline...
-    const sfile = new StreamPipeline()
-    await sfile.load(newFile)
-
-    // write the header
-    this.progress.emit('save.header', { message: 'Writing archive header' })
-    await sfile.pump(Buffer.from('SBAsset6'))
-
-    // write a placeholder for the metatable position (8 bytes, a Uint64BE)
-    await sfile.pump(Buffer.alloc(8))
-
-    const files = await this.files.list()
-    let filetable = []
-    this.progress.emit('save.files', { message: 'Writing files to archive', total: files.length })
-    for (const i in files) {
-      const filename = files[i]
-      const file = await this.files.getFileMeta(filename)
-
-      let start = (file.start instanceof Uint64BE) ? file.start.toNumber() : file.start
-      let filelength = (file.filelength instanceof Uint64BE) ? file.filelength.toNumber() : file.filelength
-
-      let res = null
-      this.progress.emit('save.file.progress', { message: 'Writing file to archive', target: file.virtualPath, type: file.type, index: i })
-      switch (file.type) {
-        case 'pak':
-          if(!file.source.pak || !file.source.pak.file) {
-            throw new Error('Could not load file from SBAsset6 archive while saving.')
-          }
-          res = await sfile.pump(file.source.pak.file.fd, start, filelength)
-          break
-
-        case 'fd':
-          res = await sfile.pump(file.source.fd, start, filelength)
-          break
-
-        case 'path':
-          res = await sfile.pump(file.source.path, start, filelength)
-          break
-
-        case 'buffer':
-          res = await sfile.pump(file.source.buffer)
-          break
-
-        default:
-          throw new TypeError('Unrecognized FileTableEntry type in SBAsset6.save')
-      }
-
-      filetable.push({
-        path: file.virtualPath,
-        offset: new Uint64BE(res.offset),
-        filelength: new Uint64BE(res.wrote)
-      })
-    }
-
-    this.progress.emit('save.metatable', { message: 'Writing archive metatable' })
-    const metatablePosition = new Uint64BE(newFile.position)
-    await sfile.pump(await SBAsset6._buildMetatable(this.metadata, filetable))
-
-    // metatable position should always be a Uint64BE found at 0x00000008
-    await fs.write(newFile.fd, metatablePosition.toBuffer(), 0, 8, 8)
-    await newFile.close()
-    await this.close()
-
-    this.progress.emit('save.done', { message: 'Saving archive file complete' })
-    await fs.move(this.path + '.tmp', this.path, { overwrite: true })
-
-    return this.load()
   }
 
   /**
@@ -307,15 +141,8 @@ export class SBAsset6 {
    *   Each entry should contain a virtual path, a Uint64BE instance for an offset, and a Uint64BE instance of a filelength.
    * @return {Promise:Buffer} - The Buffer instance containing the exact SBAsset6 archive.
    */
-  static async _buildMetatable (metadata: { [index:string]: any }, filetable: Array<FileTableEntry>) {
+  static async _buildMetatable (metadata: { [index: string]: any }, filetable: Array<FileTableEntry>) {
     let sbuf = new ExpandingBuffer()
-
-    if (metadata === null || typeof metadata !== 'object') {
-      throw new TypeError('SBAsset6._buildMetatable expects the metadata to be an object.')
-    }
-    if (!Array.isArray(filetable)) {
-      throw new TypeError('SBAsset6._buildMetatable expects the filetable to be an array.')
-    }
 
     await sbuf.write('INDEX')
     await SBON.writeMap(sbuf, metadata)
@@ -328,5 +155,184 @@ export class SBAsset6 {
     }
 
     return sbuf.getCurrentBuffer()
+  }
+
+  /**
+   * Loads the archive, parses everything out and then provides access to the archive files and metadata.
+   * This is a convenience method for the common workflow of loading the archive.
+   *
+   * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
+   */
+  async load (): Promise<LoadResult> {
+    // first, open the pak file up
+    this.file = new ConsumableFile(this.path)
+    this.progress.emit('load.start', { message: 'Loading archive file', target: this.path })
+    await this.file.open()
+
+    // read/verify the header
+    this.progress.emit('load.header', { message: 'Reading archive header' })
+    this.metatablePosition = await SBAsset6._readHeader(this.file)
+
+    // extract the metatable
+    this.progress.emit('load.metatable', { message: 'Reading archive metatable' })
+    const meta = await SBAsset6._readMetatable(this.file, this.metatablePosition)
+
+    this.progress.emit('load.files', { message: 'Loading archive file data into FileMapper', total: meta.filetable.length })
+    for (const i in meta.filetable) {
+      const fileEntry = meta.filetable[i]
+      this.progress.emit('load.file.progress', { message: 'Loading file into FileMapper', target: fileEntry.path, index: i })
+      await this.files.setFile(fileEntry.path, {
+        source: {
+          pak: this
+        },
+        start: fileEntry.offset,
+        filelength: fileEntry.filelength
+      })
+    }
+    this.metadata = meta.metadata
+
+    // return the important metatable info.
+    this.progress.emit('load.done', { message: 'Loading archive file complete' })
+    return {
+      metadata: this.metadata,
+      files: await this.files.list()
+    }
+  }
+
+  /**
+   * Close the SBAsset6 archive and flush everything from memory.
+   * Does not save changes!
+   *
+   * @return {Promise:void}
+   */
+  async close (): Promise<void> {
+    if (this.file) {
+      this.progress.emit('close', { message: 'Closing archive file' })
+      await this.file.close()
+    }
+    this.file = this.metatablePosition = undefined
+    this.metadata = {}
+    this.files = new FileMapper()
+
+    return
+  }
+
+  /**
+   * Get whether or not the pak itself has been "loaded" from the filesystem.
+   * Instances that are *going* to be created will be considered "unloaded" as no original pak exists.
+   *
+   * @return {Promise:Boolean}
+   */
+  async isLoaded (): Promise<boolean> {
+    return this.file !== undefined
+  }
+
+  /**
+   * Gets a specific chunk of data from the pak file we're working with.
+   *
+   * @private
+   * @param  {Uint64BE} offset - How far into the pak to seek to.
+   * @param  {Uint64BE} size - The amount of data to fetch.
+   * @return {Promise:Buffer} - The data we're looking for.
+   */
+  async getPakData (offset: Uint64BE, size: Uint64BE): Promise<Buffer> {
+    if (!this.file) {
+      throw new Error('Cannot read from unopened pak in SBAsset6.getPakData')
+    }
+
+    return SBAsset6._getFile(this.file, offset, size)
+  }
+
+  /**
+   * Save the currently generated SBAsset6 archive.
+   * Reloads the archive and rebuilds the FileMapper when saving is complete.
+   *
+   * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
+   */
+  async save (): Promise<LoadResult> {
+    const newFile = new ExpandingFile(this.path + '.tmp')
+    this.progress.emit('save.start', { message: 'Opening destination archive file', target: this.path })
+    await newFile.open()
+
+    // set up the Stream Pipeline...
+    const sfile = new StreamPipeline()
+    await sfile.load(newFile)
+
+    // write the header
+    this.progress.emit('save.header', { message: 'Writing archive header' })
+    await sfile.pump(Buffer.from('SBAsset6'))
+
+    // write a placeholder for the metatable position (8 bytes, a Uint64BE)
+    await sfile.pump(Buffer.alloc(8))
+
+    const files = await this.files.list()
+    let filetable = []
+    this.progress.emit('save.files', { message: 'Writing files to archive', total: files.length })
+    for (const i in files) {
+      const filename = files[i]
+      const file = await this.files.getFileMeta(filename)
+
+      let start = (file.start instanceof Uint64BE) ? file.start.toNumber() : file.start
+      let filelength = (file.filelength instanceof Uint64BE) ? file.filelength.toNumber() : file.filelength
+
+      let res = null
+      this.progress.emit('save.file.progress', { message: 'Writing file to archive', target: file.virtualPath, type: file.type, index: i })
+      switch (file.type) {
+        case 'pak':
+          if (!file.source.pak || !file.source.pak.file || !file.source.pak.file.fd) {
+            throw new Error('Could not load file from SBAsset6 archive while saving.')
+          }
+          res = await sfile.pump(file.source.pak.file.fd, start, filelength)
+          break
+
+        case 'fd':
+          if (!file.source.fd) {
+            throw new Error('Could not load file from provided file descriptor while saving.')
+          }
+          res = await sfile.pump(file.source.fd, start, filelength)
+          break
+
+        case 'path':
+          if (!file.source.path) {
+            throw new Error('Could not load file from provided file path while saving.')
+          }
+          res = await sfile.pump(file.source.path, start, filelength)
+          break
+
+        case 'buffer':
+          if (!file.source.buffer) {
+            throw new Error('Could not load file from provided Buffer while saving.')
+          }
+          res = await sfile.pump(file.source.buffer)
+          break
+
+        default:
+          throw new TypeError('Unrecognized FileTableEntry type in SBAsset6.save')
+      }
+
+      filetable.push({
+        path: file.virtualPath,
+        offset: new Uint64BE(res.offset),
+        filelength: new Uint64BE(res.wrote)
+      })
+    }
+
+    this.progress.emit('save.metatable', { message: 'Writing archive metatable' })
+    const metatablePosition = new Uint64BE(newFile.position)
+    await sfile.pump(await SBAsset6._buildMetatable(this.metadata, filetable))
+
+    if (!newFile.fd) {
+      throw new Error('File descriptor for destination archive closed before saving completed.')
+    }
+
+    // metatable position should always be a Uint64BE found at 0x00000008
+    await fs.write(newFile.fd, metatablePosition.toBuffer(), 0, 8, 8)
+    await newFile.close()
+    await this.close()
+
+    this.progress.emit('save.done', { message: 'Saving archive file complete' })
+    await fs.move(this.path + '.tmp', this.path, { overwrite: true })
+
+    return this.load()
   }
 }
