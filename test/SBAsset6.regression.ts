@@ -9,11 +9,11 @@
 /* global describe it afterEach */
 'use strict'
 
-const crypto = require('crypto')
-const path = require('path')
-const fs = require('fs-extra')
-const { expect } = require('chai')
-const SBAsset6 = require('./../SBAsset6')
+import * as crypto from 'crypto'
+import * as path from 'path'
+import * as fs from 'fs-extra'
+import { expect } from 'chai'
+import { SBAsset6 } from './../src/SBAsset6'
 
 describe('SBAsset6 regression tests', () => {
   const tmpDir = path.join(__dirname, '/tmp')
@@ -27,7 +27,9 @@ describe('SBAsset6 regression tests', () => {
 
       try {
         await fs.unlink(path.join(tmpDir, file))
-      } catch (err) {}
+      } catch (err) {
+        // noop
+      }
     }
   })
 
@@ -45,7 +47,7 @@ describe('SBAsset6 regression tests', () => {
     let stream1 = fs.createReadStream(tmpDir + '/_white_noise.ogg')
     let stream2 = fs.createReadStream(samplePath + '/mod/sfx/white_noise.ogg')
 
-    let getChecksum = (stream, hash) => {
+    let getChecksum = (stream: fs.ReadStream, hash: crypto.Hash) => {
       return new Promise((resolve, reject) => {
         stream.on('data', (data) => {
           hash.update(data)

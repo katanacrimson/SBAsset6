@@ -8,26 +8,15 @@
 /* global describe it afterEach */
 'use strict'
 
-const path = require('path')
-const fs = require('fs-extra')
-const { expect } = require('chai')
-const { Uint64BE } = require('int64-buffer')
-const SBAsset6 = require('./../SBAsset6')
-const ConsumableBuffer = require('ConsumableBuffer')
+import * as path from 'path'
+import * as fs from 'fs-extra'
+import { expect } from 'chai'
+import { Uint64BE } from 'int64-buffer'
+import { SBAsset6 } from './../src/SBAsset6'
+import { ConsumableBuffer } from 'ConsumableBuffer'
 
 describe('SBAsset6', () => {
   describe('SBAsset6._readHeader', () => {
-    it('should throw if passed something other than a ConsumableBuffer or ConsumableFile', async () => {
-      let res = null
-      try {
-        await SBAsset6._readHeader(null)
-      } catch (err) {
-        res = err
-      }
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._readHeader expects a ConsumableBuffer or ConsumableFile.')
-    })
-
     it('should throw if the file does not appear to be an SBAsset6 formatted archive', async () => {
       const buf = Buffer.from('BADERROR00000000')
       const sbuf = new ConsumableBuffer(buf)
@@ -56,33 +45,6 @@ describe('SBAsset6', () => {
   })
 
   describe('SBAsset6._readMetatable', () => {
-    it('should throw if passed something other than a ConsumableBuffer or ConsumableFile', async () => {
-      const metatablePosition = new Uint64BE(0)
-
-      let res = null
-      try {
-        await SBAsset6._readMetatable(null, metatablePosition)
-      } catch (err) {
-        res = err
-      }
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._readMetatable expects a ConsumableBuffer or ConsumableFile.')
-    })
-
-    it('should throw if passed something other than a Uint64BE for a metatablePosition', async () => {
-      const buf = Buffer.alloc(0)
-      const sbuf = new ConsumableBuffer(buf)
-
-      let res = null
-      try {
-        await SBAsset6._readMetatable(sbuf, null)
-      } catch (err) {
-        res = err
-      }
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._readMetatable expects a Uint64BE object for a metatablePosition.')
-    })
-
     it('should return the correct metatable information from a provided metatable', async () => {
       const buf = Buffer.from([
         0x00, 0x49, 0x4E, 0x44, 0x45, 0x58, 0x01, 0x08,
@@ -116,108 +78,6 @@ describe('SBAsset6', () => {
   })
 
   describe('SBAsset6._buildMetatable', () => {
-    it('should throw if metadata is not an object', async () => {
-      const metadata = null
-      const filetable = [
-        {
-          offset: new Uint64BE(0),
-          filelength: new Uint64BE(0),
-          path: 'test'
-        }
-      ]
-      let res = null
-      try {
-        await SBAsset6._buildMetatable(metadata, filetable)
-      } catch (err) {
-        res = err
-      }
-
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._buildMetatable expects the metadata to be an object.')
-    })
-
-    it('should throw if filetable is not an array', async () => {
-      const metadata = {
-        priority: 0
-      }
-      const filetable = null
-      let res = null
-      try {
-        await SBAsset6._buildMetatable(metadata, filetable)
-      } catch (err) {
-        res = err
-      }
-
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._buildMetatable expects the filetable to be an array.')
-    })
-
-    it('should throw if not provided a virtual file path', async () => {
-      const metadata = {
-        priority: 0
-      }
-      const filetable = [
-        {
-          offset: new Uint64BE(0),
-          filelength: new Uint64BE(0),
-          path: null
-        }
-      ]
-      let res = null
-      try {
-        await SBAsset6._buildMetatable(metadata, filetable)
-      } catch (err) {
-        res = err
-      }
-
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._buildMetatable expects filetable entries to provide string for the represented file\'s virtual path.')
-    })
-
-    it('should throw if not provided a file offset as a Uint64BE', async () => {
-      const metadata = {
-        priority: 0
-      }
-      const filetable = [
-        {
-          offset: null,
-          filelength: new Uint64BE(0),
-          path: '/test.txt'
-        }
-      ]
-      let res = null
-      try {
-        await SBAsset6._buildMetatable(metadata, filetable)
-      } catch (err) {
-        res = err
-      }
-
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file\'s offset.')
-    })
-
-    it('should throw if not provided a file filelength as a Uint64BE', async () => {
-      const metadata = {
-        priority: 0
-      }
-      const filetable = [
-        {
-          offset: new Uint64BE(0),
-          filelength: null,
-          path: '/test.txt'
-        }
-      ]
-      let res = null
-      try {
-        await SBAsset6._buildMetatable(metadata, filetable)
-      } catch (err) {
-        res = err
-      }
-
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._buildMetatable expects filetable entries provide Uint64BE object for the represented file\'s length.')
-    })
-
     it('should correctly build a valid metatable', async () => {
       const buf = Buffer.from([
         0x49, 0x4E, 0x44, 0x45, 0x58, 0x01, 0x08, 0x70,
@@ -244,66 +104,25 @@ describe('SBAsset6', () => {
         ]
       }
 
-      let res = await SBAsset6._buildMetatable(expected.metadata, expected.filetable)
+      let metatableBuffer = await SBAsset6._buildMetatable(expected.metadata, expected.filetable)
 
-      expect(Buffer.compare(res, buf)).to.equal(0)
+      await fs.writeFile('./expect.bin', buf)
+      await fs.writeFile('./got.bin', metatableBuffer)
+
+      expect(Buffer.compare(metatableBuffer, buf)).to.equal(0)
 
       // working around an issue...
-      res = Buffer.concat([Buffer.from([0x00]), res])
+      metatableBuffer = Buffer.concat([Buffer.from([0x00]), metatableBuffer])
 
-      const sbuf = new ConsumableBuffer(res)
+      const sbuf = new ConsumableBuffer(metatableBuffer)
       const metatablePosition = new Uint64BE(1)
-      res = await SBAsset6._readMetatable(sbuf, metatablePosition)
+      let res = await SBAsset6._readMetatable(sbuf, metatablePosition)
 
       expect(res).to.deep.equal(expected)
     })
   })
 
   describe('SBAsset6._getFile', () => {
-    it('should throw if passed something other than a ConsumableBuffer or ConsumableFile', async () => {
-      const offset = new Uint64BE(0)
-      const length = new Uint64BE(0)
-
-      let res = null
-      try {
-        await SBAsset6._getFile(null, offset, length)
-      } catch (err) {
-        res = err
-      }
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._getFile expects a ConsumableBuffer or ConsumableFile.')
-    })
-
-    it('should throw if passed something other than a Uint64BE for an offset', async () => {
-      const buf = Buffer.alloc(0)
-      const sbuf = new ConsumableBuffer(buf)
-      const length = new Uint64BE(0)
-
-      let res = null
-      try {
-        await SBAsset6._getFile(sbuf, null, length)
-      } catch (err) {
-        res = err
-      }
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._getFile expects a Uint64BE instance for an offset.')
-    })
-
-    it('should throw if passed something other than a Uint64BE for a filelength', async () => {
-      const buf = Buffer.alloc(0)
-      const sbuf = new ConsumableBuffer(buf)
-      const offset = new Uint64BE(0)
-
-      let res = null
-      try {
-        await SBAsset6._getFile(sbuf, offset, null)
-      } catch (err) {
-        res = err
-      }
-      expect(res).to.be.an.instanceof(TypeError)
-      expect(res.message).to.equal('SBAsset6._getFile expects a Uint64BE instance for a filelength.')
-    })
-
     it('should correctly get a file from a provided archive', async () => {
       const buf = Buffer.from([
         0x08, 0x5B, 0x0D, 0x0A, 0x20, 0x20, 0x7B, 0x0D,
@@ -348,9 +167,9 @@ describe('SBAsset6 integration test', () => {
       let res = await pak.load()
       expect(res).to.deep.equal(expected)
 
-      expected = await fs.readFile(path.join(__dirname, '/samples/universe_server.config.patch'), { encoding: 'utf8', flag: 'r' })
-      res = await pak.files.getFile('/universe_server.config.patch')
-      expect(res.toString('utf8')).to.equal(expected)
+      let expectedFile = await fs.readFile(path.join(__dirname, '/samples/universe_server.config.patch'), { encoding: 'utf8', flag: 'r' })
+      let resultFile = await pak.files.getFile('/universe_server.config.patch')
+      expect(resultFile.toString('utf8')).to.equal(expectedFile)
     })
 
     it('should work as expected on a large sample SBAsset6 archive', async () => {
@@ -397,7 +216,9 @@ describe('SBAsset6 integration test', () => {
 
         try {
           await fs.unlink(path.join(tmpDir, file))
-        } catch (err) {}
+        } catch (err) {
+          // noop
+        }
       }
     })
 
@@ -409,7 +230,7 @@ describe('SBAsset6 integration test', () => {
       const metadata = {
         priority: 9999999999
       }
-      let files = {
+      let files: { [index: string]: string } = {
         '/universe_server.config.patch': path.join(__dirname, '/samples/universe_server.config.patch')
       }
 
@@ -418,7 +239,9 @@ describe('SBAsset6 integration test', () => {
 
       for (const file in files) {
         await pak.files.setFile(file, {
-          path: files[file]
+          source: {
+            path: files[file]
+          }
         })
       }
 
@@ -443,7 +266,7 @@ describe('SBAsset6 integration test', () => {
         priority: 9999999999
       }
       const sourcePath = path.join(__dirname, '/samples/ExampleMod/')
-      let files = {
+      let files: { [index: string]: string } = {
         '/items/somefile3.json': path.join(sourcePath, '/items/somefile3.json'),
         '/items/generic/crafting/somefile7.json': path.join(sourcePath, '/items/generic/crafting/somefile7.json'),
         '/items/generic/crafting/somefile4.json': path.join(sourcePath, '/items/generic/crafting/somefile4.json'),
@@ -471,7 +294,9 @@ describe('SBAsset6 integration test', () => {
 
       for (const file in files) {
         await pak.files.setFile(file, {
-          path: files[file]
+          source: {
+            path: files[file]
+          }
         })
       }
 
@@ -494,7 +319,7 @@ describe('SBAsset6 integration test', () => {
       const filePath = path.join(tmpDir, '/bigmodtest.pak')
       const sourcePath = path.join(__dirname, '/samples/ExampleMod/')
 
-      let expected = {
+      let expected: { metadata: { [index: string]: any }, files: { [index: string]: string } } = {
         metadata: JSON.parse(await fs.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
         files: {
           '/items/somefile3.json': path.join(sourcePath, '/items/somefile3.json'),
@@ -530,7 +355,9 @@ describe('SBAsset6 integration test', () => {
       pak.metadata.test = 'success'
 
       await pak.files.setFile('/universe_server.config.patch', {
-        path: path.join(__dirname, '/samples/universe_server.config.patch')
+        source: {
+          path: path.join(__dirname, '/samples/universe_server.config.patch')
+        }
       })
 
       const res = await pak.save()
@@ -552,7 +379,7 @@ describe('SBAsset6 integration test', () => {
       const filePath = path.join(tmpDir, '/bigremtest.pak')
       const sourcePath = path.join(__dirname, '/samples/ExampleMod/')
 
-      let expected = {
+      let expected: { metadata: { [index: string]: any }, files: { [index: string]: string } } = {
         metadata: JSON.parse(await fs.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
         files: {
           '/items/somefile3.json': path.join(sourcePath, '/items/somefile3.json'),
