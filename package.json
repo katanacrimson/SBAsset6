@@ -1,6 +1,6 @@
 {
   "name": "SBAsset6",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "SBAsset6 parsing library",
   "main": "build/SBAsset6.js",
   "types": "build/SBAsset6.d.ts",

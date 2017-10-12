@@ -106,9 +106,6 @@ describe('SBAsset6', () => {
 
       let metatableBuffer = await SBAsset6._buildMetatable(expected.metadata, expected.filetable)
 
-      await fs.writeFile('./expect.bin', buf)
-      await fs.writeFile('./got.bin', metatableBuffer)
-
       expect(Buffer.compare(metatableBuffer, buf)).to.equal(0)
 
       // working around an issue...
