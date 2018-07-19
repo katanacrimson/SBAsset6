@@ -1,30 +1,37 @@
+"use strict";
 //
 // SBAsset6 - JS library for working with SBAsset6 archive format.
 // ---
-// @copyright (c) 2017 Damian Bushong <katana@odios.us>
+// @copyright (c) 2018 Damian Bushong <katana@odios.us>
 // @license MIT license
 // @url <https://github.com/damianb/SBAsset6>
 //
-'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const fs = require("fs-extra");
 const int64_buffer_1 = require("int64-buffer");
-const ConsumableFile_1 = require("ConsumableFile");
-const ExpandingBuffer_1 = require("ExpandingBuffer");
-const ExpandingFile_1 = require("ExpandingFile");
-const StreamPipeline_1 = require("StreamPipeline");
+const ByteAccordion_1 = require("ByteAccordion");
 const SBON_1 = require("SBON");
 const FileMapper_1 = require("./FileMapper");
-//
-// SBAsset6 - provides an abstraction around reading/interacting with SBAsset6 archives (also known as Starbound "pak" files)
-//
 class SBAsset6 {
     /**
-     * SBAsset6 Constructor
+     * SBAsset6 is a class which abstracts and provides a solid library for parsing and working with SBAsset6 formatted archive files
+     *   (otherwise known as Starbound .pak files).
      *
-     * @param  {String} path - The filepath for the archive we're going to work with.
+     * @param  path - The filepath for the archive we're going to work with.
      * @return {SBAsset6}
+     *
+     * @example
+     * ```
+     * import { SBAsset6 } from 'SBAsset6'
+     * const filepath = '/path/to/mod.pak'
+     *
+     * const pak = new SBAsset6(filepath)
+     * const { metadata, files } = await pak.load()
+     *
+     * let fileContents = await pak.getFile('/path/inside/of/pak/to/file.config')
+     * // note, this file should exist within the files array above
+     * ```
      */
     constructor(path) {
         this.path = path;
@@ -35,10 +42,14 @@ class SBAsset6 {
     }
     /**
      * Reads the header of a file and identifies if it is SBAsset6 format.
-     * @access private
      *
-     * @param {ConsumableBuffer|ConsumableFile} sbuf - The stream to read from.
-     * @return {Promise:Uint64BE} - A Big-endian Uint64 value containing the file offset for the archive metatable.
+     * @private
+     * @hidden
+     *
+     * @throws {Error} - Throws when the file provided does not appear to be an SBAsset6 archive.
+     *
+     * @param  sbuf - The stream to read from.
+     * @return {Promise<Uint64BE>} - A Big-endian Uint64 value containing the file offset for the archive metatable.
      */
     static async _readHeader(sbuf) {
         // grab the first 8 bytes - this should be a standard SBAsset6 pak header
@@ -51,11 +62,15 @@ class SBAsset6 {
     }
     /**
      * Reads the metatable, given the correct position, and parses out the filetable and archive metadata.
-     * @access private
      *
-     * @param  {ConsumableBuffer|ConsumableFile} sbuf - The stream to read from.
-     * @param  {Uint64BE} metatablePosition - The Uint64BE containing the metatable location within the archive.
-     * @return {Promise:Object} - An Object that contains the metadata and filetable of the archive.
+     * @private
+     * @hidden
+     *
+     * @throws {Error} - Throws when the metatable pointer does not seem to correctly locate the metatable.
+     *
+     * @param  sbuf - The stream to read from.
+     * @param  metatablePosition - The Uint64BE containing the metatable location within the archive.
+     * @return {Promise<Metatable>} - An Object that contains the metadata and filetable of the archive.
      */
     static async _readMetatable(sbuf, metatablePosition) {
         // head to the metatable!
@@ -89,10 +104,13 @@ class SBAsset6 {
     /**
      * Gets a file of specified length from a specific offset within the archive.
      *
-     * @param  {ConsumableBuffer|ConsumableFile} sbuf - The stream to read from.
-     * @param  {Uint64BE} offset - Offset in bytes of the file's location in the archive.
-     * @param  {Uint64BE} filelength - Length in bytes for the file.
-     * @return {Promise:Buffer} - The buffer containing the contents of the specified file.
+     * @private
+     * @hidden
+     *
+     * @param  sbuf - The stream to read from.
+     * @param  offset - Offset in bytes of the file's location in the archive.
+     * @param  filelength - Length in bytes for the file.
+     * @return {Promise<Buffer>} - The buffer containing the contents of the specified file.
      */
     static async _getFile(sbuf, offset, filelength) {
         await sbuf.aseek(offset.toNumber());
@@ -101,13 +119,16 @@ class SBAsset6 {
     /**
      * Builds the metatable used for SBAsset6 archives.
      *
-     * @param  {Object} metadata - The object containing the metadata for the SBasset6 archive.
-     * @param  {Array} filetable - Array of objects representing the filetable.
+     * @private
+     * @hidden
+     *
+     * @param  metadata - The object containing the metadata for the SBasset6 archive.
+     * @param  filetable - Array of objects representing the filetable.
      *   Each entry should contain a virtual path, a Uint64BE instance for an offset, and a Uint64BE instance of a filelength.
-     * @return {Promise:Buffer} - The Buffer instance containing the exact SBAsset6 archive.
+     * @return {Promise<Buffer>} - The Buffer instance containing the exact SBAsset6 archive.
      */
     static async _buildMetatable(metadata, filetable) {
-        let sbuf = new ExpandingBuffer_1.ExpandingBuffer();
+        let sbuf = new ByteAccordion_1.ExpandingBuffer();
         await sbuf.write('INDEX');
         await SBON_1.SBON.writeMap(sbuf, metadata);
         await SBON_1.SBON.writeVarInt(sbuf, Object.values(filetable).length);
@@ -116,17 +137,32 @@ class SBAsset6 {
             await sbuf.write(file.offset.toBuffer());
             await sbuf.write(file.filelength.toBuffer());
         }
-        return sbuf.getCurrentBuffer();
+        return sbuf.buf;
     }
     /**
      * Loads the archive, parses everything out and then provides access to the archive files and metadata.
      * This is a convenience method for the common workflow of loading the archive.
      *
-     * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
+     * @return {Promise<LoadResult>} - An object containing the archive's metadata and all files contained in the archive that can be read out.
+     *
+     * @emits load.start - `{ message, target }` - `target` is the archive we're trying to load.
+     * @emits load.header - `{ message }`
+     * @emits load.metatable - `{ message }`
+     * @emits load.files - `{ message, total }` - `total` is the total number of files found in the archive.
+     * @emits load.file.progress - `{ message, target, index }` - `target` is the virtualPath the file whose metadata we're loading into the FileMapper,
+     *   and `index` tells us how many files in we are (X, where "File X of Y").
+     * @emits load.done - `{ message }`
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * const { metadata, files } = await pak.load()
+     * ```
      */
     async load() {
         // first, open the pak file up
-        this.file = new ConsumableFile_1.ConsumableFile(this.path);
+        this.file = new ByteAccordion_1.ConsumableFile(this.path);
         this.progress.emit('load.start', { message: 'Loading archive file', target: this.path });
         await this.file.open();
         // read/verify the header
@@ -159,7 +195,23 @@ class SBAsset6 {
      * Close the SBAsset6 archive and flush everything from memory.
      * Does not save changes!
      *
-     * @return {Promise:void}
+     * @return {Promise<void>}
+     *
+     * @emits close - `{ message }`
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * const { metadata, files } = await pak.load()
+     * // you know have access to metadata and files. yay!
+     *
+     * // ...
+     *
+     * // all done here. time to clean up and release resources.
+     *
+     * await pak.close()
+     * ```
      */
     async close() {
         if (this.file) {
@@ -175,7 +227,20 @@ class SBAsset6 {
      * Get whether or not the pak itself has been "loaded" from the filesystem.
      * Instances that are *going* to be created will be considered "unloaded" as no original pak exists.
      *
-     * @return {Promise:Boolean}
+     * @return {Promise<boolean>}
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * const { metadata, files } = await pak.load()
+     * // you know have access to metadata and files. yay!
+     *
+     * // ...
+     *
+     * // wait, did we load the pak earlier? has it been closed since? let's check...
+     * const isOpen = await pak.isLoaded()
+     * ```
      */
     async isLoaded() {
         return this.file !== undefined;
@@ -184,9 +249,13 @@ class SBAsset6 {
      * Gets a specific chunk of data from the pak file we're working with.
      *
      * @private
-     * @param  {Uint64BE} offset - How far into the pak to seek to.
-     * @param  {Uint64BE} size - The amount of data to fetch.
-     * @return {Promise:Buffer} - The data we're looking for.
+     * @hidden
+     *
+     * @throws {Error} - Throws when the pak file hasn't been opened yet.
+     *
+     * @param  offset - How far into the pak to seek to.
+     * @param  size - The amount of data to fetch.
+     * @return {Promise<Buffer>} - The data we're looking for.
      */
     async getPakData(offset, size) {
         if (!this.file) {
@@ -198,14 +267,41 @@ class SBAsset6 {
      * Save the currently generated SBAsset6 archive.
      * Reloads the archive and rebuilds the FileMapper when saving is complete.
      *
-     * @return {Promise:Object} - An object containing the archive's metadata and all files contained in the archive that can be read out.
+     * @return {Promise<LoadResult>} - An object containing the archive's metadata and all files contained in the archive that can be read out.
+     *
+     * @emits save.start - `{ message, target }` - `target` is the archive we're trying to save to.
+     * @emits save.header - `{ message }`
+     * @emits save.files - `{ message, total }` - `total` is the total number of files being written to the archive.
+     * @emits save.file.progress - `{ message, target, index }` - `target` is the virtualPath the file that we're writing to the archive,
+     *   and `index` tells us how many files in we are (X, where "File X of Y").
+     * @emits save.metatable - `{ message }`
+     * @emits save.done - `{ message }`
+     *
+     * @throws {Error} - Throws when we couldn't load a source file from a provided file descriptor.
+     * @throws {Error} - Throws when we couldn't load a source file from a provided file path.
+     * @throws {Error} - Throws when we couldn't load a source file from a provided buffer.
+     * @throws {TypeError} - Throws when we have an unexpected file.type in the FileMapper.
+     * @throws {Error} - Throws when the file descriptor for the new file we're trying to save is closed early.
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * await pak.load()
+     *
+     * // This pak's description was too long. Let's change it.
+     * pak.metadata.description = 'Shorter description.'
+     *
+     * // Need to save our changes now...
+     * await pak.save()
+     * ```
      */
     async save() {
-        const newFile = new ExpandingFile_1.ExpandingFile(this.path + '.tmp');
+        const newFile = new ByteAccordion_1.ExpandingFile(this.path + '.tmp');
         this.progress.emit('save.start', { message: 'Opening destination archive file', target: this.path });
         await newFile.open();
         // set up the Stream Pipeline...
-        const sfile = new StreamPipeline_1.StreamPipeline();
+        const sfile = new ByteAccordion_1.StreamPipeline();
         await sfile.load(newFile);
         // write the header
         this.progress.emit('save.header', { message: 'Writing archive header' });
@@ -272,3 +368,4 @@ class SBAsset6 {
     }
 }
 exports.SBAsset6 = SBAsset6;
+//# sourceMappingURL=SBAsset6.js.map

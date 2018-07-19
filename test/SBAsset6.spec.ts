@@ -1,19 +1,17 @@
 //
 // SBAsset6 - JS library for working with SBAsset6 archive format
 // ---
-// @copyright (c) 2017 Damian Bushong <katana@odios.us>
+// @copyright (c) 2018 Damian Bushong <katana@odios.us>
 // @license MIT license
 // @url <https://github.com/damianb/SBAsset6>
 //
-/* global describe it afterEach */
-'use strict'
 
 import * as path from 'path'
 import * as fs from 'fs-extra'
 import { expect } from 'chai'
 import { Uint64BE } from 'int64-buffer'
 import { SBAsset6 } from './../src/SBAsset6'
-import { ConsumableBuffer } from 'ConsumableBuffer'
+import { ConsumableBuffer } from 'ByteAccordion'
 
 describe('SBAsset6', () => {
   describe('SBAsset6._readHeader', () => {
@@ -219,7 +217,7 @@ describe('SBAsset6 integration test', () => {
       }
     })
 
-    it('should be able to write a simple SBAsset6 archive (slow running test)', async function () {
+    it('should be able to write a simple SBAsset6 archive (slow running test)', async function () { // tslint:disable-line
       this.slow(2000)
       this.timeout(5000)
 
@@ -254,7 +252,7 @@ describe('SBAsset6 integration test', () => {
       }
     })
 
-    it('should be able to write a large SBAsset6 archive (slow running test)', async function () {
+    it('should be able to write a large SBAsset6 archive (slow running test)', async function () { // tslint:disable-line
       this.slow(2000)
       this.timeout(5000)
 
@@ -309,7 +307,7 @@ describe('SBAsset6 integration test', () => {
       }
     })
 
-    it('should be able to modify an SBAsset6 archive (slow running test)', async function () {
+    it('should be able to modify an SBAsset6 archive (slow running test)', async function () { // tslint:disable-line
       this.slow(5000)
       this.timeout(20000)
 
@@ -369,7 +367,7 @@ describe('SBAsset6 integration test', () => {
       }
     })
 
-    it('should be able to remove files from an SBAsset6 archive (slow running test)', async function () {
+    it('should be able to remove files from an SBAsset6 archive (slow running test)', async function () { // tslint:disable-line
       this.slow(5000)
       this.timeout(20000)
 

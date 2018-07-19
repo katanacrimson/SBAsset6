@@ -1,16 +1,18 @@
 {
   "name": "SBAsset6",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "SBAsset6 parsing library",
   "main": "build/SBAsset6.js",
   "types": "build/SBAsset6.d.ts",
   "scripts": {
-    "style": "tslint ./src/*.ts -p ./tsconfig.json --type-check",
-    "unit": "mocha --compilers ts:ts-node/register ./test/*.spec.ts",
-    "regression": "mocha --compilers ts:ts-node/register ./test/*.regression.ts",
+    "docs": "typedoc --out docs/ --mode file ./src/ --theme minimal",
+    "style": "tslint ./src/*.ts -p ./tsconfig.json",
+    "unit": "mocha --require ts-node/register ./test/*.spec.ts",
+    "regression": "mocha --require ts-node/register ./test/*.regression.ts",
     "test": "npm run style && npm run unit && npm run regression",
     "build": "tsc",
-    "qc": "npm run build && npm run style && npm run unit && npm run regression"
+    "qc": "npm run build && npm run style && npm run unit && npm run regression",
+    "prepublishOnly": "npm run docs && npm run build && npm run style && npm run unit && npm run regression"
   },
   "repository": {
     "type": "git",
@@ -27,25 +29,22 @@
   },
   "homepage": "https://github.com/damianb/sbasset6#readme",
   "dependencies": {
-    "@types/fs-extra": "^4.0.2",
-    "@types/node": "^8.0.34",
-    "ConsumableBuffer": "github:damianb/ConsumableBuffer",
-    "ConsumableFile": "github:damianb/ConsumableFile",
-    "ExpandingBuffer": "github:damianb/ExpandingBuffer",
-    "ExpandingFile": "github:damianb/ExpandingFile",
-    "SBON": "github:damianb/SBON",
-    "StreamPipeline": "github:damianb/streampipeline",
-    "fs-extra": "^4.0.2",
+    "@types/fs-extra": "^5.0.4",
+    "@types/node": "^8.0.45",
+    "ByteAccordion": "github:damianb/ByteAccordion#1.1.0",
+    "SBON": "github:damianb/SBON#2.3.0",
+    "fs-extra": "^7.0.0",
     "int64-buffer": "^0.1.9"
   },
   "devDependencies": {
     "@types/chai": "^4.0.4",
     "@types/mocha": "^2.2.43",
     "chai": "^4.1.2",
-    "mocha": "^3.5.3",
-    "ts-node": "^3.3.0",
-    "tslint": "^5.7.0",
-    "tslint-config-standard": "^6.0.1",
-    "typescript": "^2.5.3"
+    "mocha": "^5.2.0",
+    "ts-node": "^7.0.0",
+    "tslint": "^5.11.0",
+    "tslint-config-standard": "^7.0.1",
+    "typedoc": "^0.11.0",
+    "typescript": "^2.9.0"
   }
 }

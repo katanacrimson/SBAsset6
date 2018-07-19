@@ -1,4 +1,4 @@
-# SBAsset6 [![Build Status](https://travis-ci.org/damianb/SBAsset6.svg?branch=master)](https://travis-ci.org/damianb/SBAsset6)
+# SBAsset6
 
 ## A node.js library for parsing SBAsset6-formatted files
 
@@ -20,7 +20,7 @@ Some reverse-engineering documentation is available in the [blixt/py-starbound](
 Ensure you have at least node.js v7.6+, and then...
 
 ``` bash
-$ npm i -s damianb/SBAsset6
+$ yarn add https://github.com/damianb/SBAsset6.git
 ```
 
 ### How do I use this library?
