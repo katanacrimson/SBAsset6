@@ -52,6 +52,9 @@ describe('SBAsset6 regression tests', () => {
         stream.on('end', () => {
           resolve(hash.digest('hex'))
         })
+        stream.on('error', (err: Error) => {
+          reject(err)
+        })
       })
     }
 
