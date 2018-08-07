@@ -20,7 +20,7 @@ Some reverse-engineering documentation is available in the [blixt/py-starbound](
 Ensure you have at least node.js v7.6+, and then...
 
 ``` bash
-$ yarn add https://github.com/damianb/SBAsset6.git
+$ yarn add sbasset6
 ```
 
 ### How do I use this library?

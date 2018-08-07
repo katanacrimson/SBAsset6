@@ -16,7 +16,7 @@ import {
   StreamPipeline,
   ConsumableResource
 } from 'ByteAccordion'
-import { SBON } from 'SBON'
+import { SBON } from 'sbon'
 import { FileMapper } from './FileMapper'
 
 /**
@@ -125,7 +125,7 @@ export class SBAsset6 {
    *
    * @example
    * ```
-   * import { SBAsset6 } from 'SBAsset6'
+   * import { SBAsset6 } from 'sbasset6'
    * const filepath = '/path/to/mod.pak'
    *
    * const pak = new SBAsset6(filepath)

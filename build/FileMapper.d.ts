@@ -38,7 +38,7 @@ export declare class FileMapper {
      *
      * @example
      * ```
-     * import { SBAsset6 } from 'SBAsset6'
+     * import { SBAsset6 } from 'sbasset6'
      * const filepath = '/path/to/mod.pak'
      *
      * const pak = new SBAsset6(filepath)

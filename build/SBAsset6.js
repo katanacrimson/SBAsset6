@@ -11,7 +11,7 @@ const events_1 = require("events");
 const fs = require("fs-extra");
 const int64_buffer_1 = require("int64-buffer");
 const ByteAccordion_1 = require("ByteAccordion");
-const SBON_1 = require("SBON");
+const sbon_1 = require("sbon");
 const FileMapper_1 = require("./FileMapper");
 class SBAsset6 {
     /**
@@ -23,7 +23,7 @@ class SBAsset6 {
      *
      * @example
      * ```
-     * import { SBAsset6 } from 'SBAsset6'
+     * import { SBAsset6 } from 'sbasset6'
      * const filepath = '/path/to/mod.pak'
      *
      * const pak = new SBAsset6(filepath)
@@ -80,14 +80,14 @@ class SBAsset6 {
             throw new Error('Failed to correctly seek to metatable header.');
         }
         // grab the metadata, an SBON map
-        const metadata = await SBON_1.SBON.readMap(sbuf);
+        const metadata = await sbon_1.SBON.readMap(sbuf);
         // how many files are in this pak?
-        const numFiles = await SBON_1.SBON.readVarInt(sbuf);
+        const numFiles = await sbon_1.SBON.readVarInt(sbuf);
         // read the file table from the metadata...
         let filetable = [];
         let i = numFiles;
         while (i--) {
-            const filePath = await SBON_1.SBON.readString(sbuf);
+            const filePath = await sbon_1.SBON.readString(sbuf);
             const fileOffset = new int64_buffer_1.Uint64BE(await sbuf.read(8));
             const filelength = new int64_buffer_1.Uint64BE(await sbuf.read(8));
             filetable.push({
@@ -130,10 +130,10 @@ class SBAsset6 {
     static async _buildMetatable(metadata, filetable) {
         let sbuf = new ByteAccordion_1.ExpandingBuffer();
         await sbuf.write('INDEX');
-        await SBON_1.SBON.writeMap(sbuf, metadata);
-        await SBON_1.SBON.writeVarInt(sbuf, Object.values(filetable).length);
+        await sbon_1.SBON.writeMap(sbuf, metadata);
+        await sbon_1.SBON.writeVarInt(sbuf, Object.values(filetable).length);
         for (let file of filetable) {
-            await SBON_1.SBON.writeString(sbuf, file.path);
+            await sbon_1.SBON.writeString(sbuf, file.path);
             await sbuf.write(file.offset.toBuffer());
             await sbuf.write(file.filelength.toBuffer());
         }

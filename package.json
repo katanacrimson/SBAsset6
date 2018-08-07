@@ -1,5 +1,5 @@
 {
-  "name": "SBAsset6",
+  "name": "sbasset6",
   "version": "2.2.0",
   "description": "SBAsset6 parsing library",
   "main": "build/SBAsset6.js",
@@ -31,8 +31,8 @@
   "dependencies": {
     "@types/fs-extra": "^5.0.4",
     "@types/node": "^8.0.45",
-    "ByteAccordion": "github:damianb/ByteAccordion#1.1.0",
-    "SBON": "github:damianb/SBON#2.3.0",
+    "byteaccordion": "^1.1.2",
+    "sbon": "^2.3.2",
     "fs-extra": "^7.0.0",
     "int64-buffer": "^0.1.9"
   },

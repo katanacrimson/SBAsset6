@@ -11,7 +11,7 @@ import * as fs from 'fs-extra'
 import { expect } from 'chai'
 import { Uint64BE } from 'int64-buffer'
 import { SBAsset6 } from './../src/SBAsset6'
-import { ConsumableBuffer } from 'ByteAccordion'
+import { ConsumableBuffer } from 'byteaccordion'
 
 describe('SBAsset6', () => {
   describe('SBAsset6._readHeader', () => {
