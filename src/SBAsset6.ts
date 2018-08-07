@@ -15,7 +15,7 @@ import {
   ExpandingBuffer,
   StreamPipeline,
   ConsumableResource
-} from 'ByteAccordion'
+} from 'byteaccordion'
 import { SBON } from 'sbon'
 import { FileMapper } from './FileMapper'
 

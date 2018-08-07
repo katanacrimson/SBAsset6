@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
 import { Uint64BE } from 'int64-buffer';
-import { ConsumableFile, ConsumableResource } from 'ByteAccordion';
+import { ConsumableFile, ConsumableResource } from 'byteaccordion';
 import { FileMapper } from './FileMapper';
 /**
  * Abstracts the result of loading an SBAsset6 archive.

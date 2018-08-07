@@ -10,7 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const fs = require("fs-extra");
 const int64_buffer_1 = require("int64-buffer");
-const ByteAccordion_1 = require("ByteAccordion");
+const byteaccordion_1 = require("byteaccordion");
 const sbon_1 = require("sbon");
 const FileMapper_1 = require("./FileMapper");
 class SBAsset6 {
@@ -128,7 +128,7 @@ class SBAsset6 {
      * @return {Promise<Buffer>} - The Buffer instance containing the exact SBAsset6 archive.
      */
     static async _buildMetatable(metadata, filetable) {
-        let sbuf = new ByteAccordion_1.ExpandingBuffer();
+        let sbuf = new byteaccordion_1.ExpandingBuffer();
         await sbuf.write('INDEX');
         await sbon_1.SBON.writeMap(sbuf, metadata);
         await sbon_1.SBON.writeVarInt(sbuf, Object.values(filetable).length);
@@ -162,7 +162,7 @@ class SBAsset6 {
      */
     async load() {
         // first, open the pak file up
-        this.file = new ByteAccordion_1.ConsumableFile(this.path);
+        this.file = new byteaccordion_1.ConsumableFile(this.path);
         this.progress.emit('load.start', { message: 'Loading archive file', target: this.path });
         await this.file.open();
         // read/verify the header
@@ -297,11 +297,11 @@ class SBAsset6 {
      * ```
      */
     async save() {
-        const newFile = new ByteAccordion_1.ExpandingFile(this.path + '.tmp');
+        const newFile = new byteaccordion_1.ExpandingFile(this.path + '.tmp');
         this.progress.emit('save.start', { message: 'Opening destination archive file', target: this.path });
         await newFile.open();
         // set up the Stream Pipeline...
-        const sfile = new ByteAccordion_1.StreamPipeline();
+        const sfile = new byteaccordion_1.StreamPipeline();
         await sfile.load(newFile);
         // write the header
         this.progress.emit('save.header', { message: 'Writing archive header' });
