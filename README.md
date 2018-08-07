@@ -25,24 +25,4 @@ $ yarn add https://github.com/damianb/SBAsset6.git
 
 ### How do I use this library?
 
-In brief:
-
-``` js
-'use strict'
-const SBAsset6 = require('SBAsset6')
-
-const pak = new SBAsset6('/path/to/pak/file.pak')
-pak.load().then(async () => {
-	console.dir(pak.files)
-	// ^ gives you an array of all the files in the archive
-
-	console.dir(pak.metadata)
-	// ^ gives you the metadata about the pak itself (basically, the _metadata file)
-
-	let fileContents = await pak.getFile('/path/in/pak/to/filename.config')
-	// ^ gives you the contents of the specified file in the pak
-})
-
-```
-
-Full library documentation is available in the repository under the /docs/ directory.
+Reference the [documentation](https://damianb.github.io/SBAsset6/).
