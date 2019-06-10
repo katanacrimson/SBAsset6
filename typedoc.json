@@ -1,0 +1,10 @@
+{
+  "gitRevision": "master",
+  "theme": "minimal",
+  "out": "docs/",
+  "mode": "file",
+  "includeDeclarations": true,
+  "excludeExternals": true,
+  "excludeNotExported": true,
+  "excludePrivate": true
+}
