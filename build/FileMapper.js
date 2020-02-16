@@ -1,60 +1,84 @@
+"use strict";
 //
 // SBAsset6 - JS library for working with SBAsset6 archive format.
 // ---
-// @copyright (c) 2017 Damian Bushong <katana@odios.us>
+// @copyright (c) 2018 Damian Bushong <katana@odios.us>
 // @license MIT license
 // @url <https://github.com/damianb/SBAsset6>
 //
-'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs-extra");
-//
-// FileMapper - provides an abstraction around SBAsset6 file tables for sensibly managing files contained within the archive
-//
 class FileMapper {
     /**
-     * FileMapper Constructor
+     * FileMapper is a class which provides an abstraction around SBAsset6 file tables for sensibly managing files contained within the archive.
      *
      * @return {FileMapper}
+     *
+     * @example
+     * ```
+     * import { SBAsset6 } from 'sbasset6'
+     * const filepath = '/path/to/mod.pak'
+     *
+     * const pak = new SBAsset6(filepath)
+     * await pak.load()
+     * let files = await pak.files.list()
+     * ```
      */
     constructor() {
-        this.filetable = {};
+        this.filetable = new Map();
     }
     /**
      * Lists all "files" mapped in the FileMapper.
      *
-     * @return {Promise:Array} - Array of virtual filepaths that are currently registered within the FileMapper.
+     * @return {Promise<string[]>} - Array of virtual filepaths that are currently registered within the FileMapper.
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * await pak.load()
+     *
+     * const files = await pak.files.list()
+     * ```
      */
     async list() {
-        return Object.keys(this.filetable);
+        return Array.from(this.filetable.keys());
     }
     /**
      * Identifies if a "file" exists at the specified virtualPath.
      *
-     * @param  {String} virtualPath - The virtualPath to check for existence.
-     * @return {Promise:Boolean}
+     * @param  virtualPath - The virtualPath to check for existence.
+     * @return {Promise<boolean>}
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * await pak.load()
+     *
+     * const fileExists = await pak.files.exists('/path/to/file/inside/pak.txt')
+     * if(fileExists) {
+     *   // ...
+     * }
+     * ```
      */
     async exists(virtualPath) {
-        return !!this.filetable[virtualPath];
-    }
-    /**
-     * Get the "file" metadata for the specified filepath (basically, where to load the file from).
-     *
-     * @private
-     * @param  {String} virtualPath - The virtualPath to get metadata for.
-     * @return {Promise:Object} - File metadata for loading.
-     */
-    async getFileMeta(virtualPath) {
-        if (!(await this.exists(virtualPath))) {
-            throw new Error('No file exists at the specified virtualPath.');
-        }
-        return this.filetable[virtualPath];
+        return this.filetable.has(virtualPath);
     }
     /**
      * Gets the contents of the "file" at the specified virtualPath.
      *
-     * @param  {String} virtualPath - The virtualPath to load the "file" from.
-     * @return {Promise:Buffer} - The "file" contents, as a Buffer instance.
+     * @param  virtualPath - The virtualPath to load the "file" from.
+     * @return {Promise<Buffer>} - The "file" contents, as a Buffer instance.
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * await pak.load()
+     *
+     * const fileContents = await pak.files.getFile('/path/to/file/inside/pak.txt')
+     * ```
      */
     async getFile(virtualPath) {
         if (!(await this.exists(virtualPath))) {
@@ -98,12 +122,32 @@ class FileMapper {
      * Set file metadata for the given filepath.
      *   This does NOT merge with previous properties, so specify everything (including old) at once.
      *
-     * @param {String} virtualPath - The virtualPath to set file metadata for.
-     * @param {Object} options - The metadata to set.
-     * @return {Promise:void}
+     * @param virtualPath - The virtualPath to set file metadata for.
+     * @param options - The metadata to set.
+     * @return {Promise<void>}
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * await pak.load()
+     *
+     * const fileContents = await pak.files.getFile('/path/to/file/inside/pak.txt')
+     * await pak.files.setFile('/path/to/file/inside/pak.txt', { path: '/samples/file.txt' })
+     * // note: use of Date.now() below would make the build non-reproducible.
+     * //   try to avoid this, in reality!  it's just an example for now.
+     * const buildMeta = Buffer.from(JSON.stringify({
+     *   buildTool: 'js-starbound/SBAsset6/2.0.0',
+     *   buildTime: Date.now()
+     * }))
+     * await pak.files.setFile('/buildinfo.json', { buffer: buildMeta })
+     *
+     * // gotta save our changes now!
+     * await pak.save()
+     * ```
      */
     async setFile(virtualPath, options) {
-        options = options || {};
+        options = options || { source: undefined };
         let fileOptions;
         if (options.source.pak) {
             if (options.start === undefined || options.filelength === undefined) {
@@ -153,21 +197,49 @@ class FileMapper {
         else {
             throw new TypeError('FileMapper.setFile requires either a SBAsset6 instance, a file descriptor, a filepath, or a Buffer be specified for the source.');
         }
-        this.filetable[virtualPath] = fileOptions;
+        this.filetable.set(virtualPath, fileOptions);
         return;
     }
     /**
      * Delete a specified "file" from the archive.
      * Simply removes the metadata entry; it will just be excluded when the new archive is built.
      *
-     * @param  {String} virtualPath - The virtualPath of the file to delete.
-     * @return {Promise:void}
+     * @param  virtualPath - The virtualPath of the file to delete.
+     * @return {Promise<void>}
+     *
+     * @example
+     * ```
+     * const filepath = '/path/to/mod.pak'
+     * const pak = new SBAsset6(filepath)
+     * await pak.load()
+     *
+     * await pak.files.deleteFile('/path/to/file/inside/pak.txt')
+     *
+     * // save our changes. we never wanted that file in there anyways!
+     * await pak.save()
+     * ```
      */
     async deleteFile(virtualPath) {
         if (await this.exists(virtualPath)) {
-            delete this.filetable[virtualPath];
+            this.filetable.delete(virtualPath);
         }
         return;
     }
+    /**
+     * Get the "file" metadata for the specified filepath (basically, where to load the file from).
+     *
+     * @private
+     * @hidden
+     *
+     * @param  virtualPath - The virtualPath to get metadata for.
+     * @return {Promise<FileMapperEntry>} - File metadata for loading.
+     */
+    async getFileMeta(virtualPath) {
+        if (!(await this.exists(virtualPath))) {
+            throw new Error('No file exists at the specified virtualPath.');
+        }
+        return this.filetable.get(virtualPath);
+    }
 }
 exports.FileMapper = FileMapper;
+//# sourceMappingURL=FileMapper.js.map

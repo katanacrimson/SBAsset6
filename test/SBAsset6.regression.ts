@@ -1,13 +1,10 @@
 //
 // SBAsset6 - JS library for working with SBAsset6 archive format
 // ---
-// @copyright (c) 2017 Damian Bushong <katana@odios.us>
+// @copyright (c) 2018 Damian Bushong <katana@odios.us>
 // @license MIT license
-// @url <https://github.com/damianb/>
-// @reddit <https://reddit.com/u/katana__>
+// @url <https://github.com/damianb/SBAsset6>
 //
-/* global describe it afterEach */
-'use strict'
 
 import * as crypto from 'crypto'
 import * as path from 'path'
@@ -54,6 +51,9 @@ describe('SBAsset6 regression tests', () => {
         })
         stream.on('end', () => {
           resolve(hash.digest('hex'))
+        })
+        stream.on('error', (err: Error) => {
+          reject(err)
         })
       })
     }
