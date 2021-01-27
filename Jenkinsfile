@@ -54,12 +54,7 @@ pipeline {
               $NPM_BIN/nyc $NPM_BIN/mocha \
                 --config test/.ci.mocharc.json \
                 --reporter-options configFile=test/mocha.json \
-                ./test/*.spec.ts
-            """.stripIndent()
-
-            sh """
-              $NPM_BIN/mocha \
-                --config test/.ci.mocharc.json \
+                ./test/*.spec.ts \
                 ./test/*.regression.ts
             """.stripIndent()
           }

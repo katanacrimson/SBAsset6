@@ -7,12 +7,11 @@
   "scripts": {
     "docs": "typedoc ./src/index.ts",
     "style": "eslint ./src/*.ts",
-    "unit": "cross-env NODE_ENV=test nyc mocha --config test/.mocharc.json --reporter-options configFile=test/mocha.json ./test/*.spec.ts",
-    "regression": "mocha --config test/.mocharc.json ./test/*.regression.ts",
-    "test": "yarn run style && yarn run unit && yarn run regression",
+    "unit": "cross-env NODE_ENV=test nyc mocha --config test/.mocharc.json --reporter-options configFile=test/mocha.json ./test/*.spec.ts ./test/*.regression.ts",
+    "test": "yarn run style && yarn run unit",
     "build": "tsc -p ./tsconfig.json",
-    "qc": "yarn run build && yarn run style && yarn run unit && yarn run regression",
-    "prepublishOnly": "yarn run docs && yarn run build && yarn run style && yarn run unit && yarn run regression"
+    "qc": "yarn run build && yarn run style && yarn run unit",
+    "prepublishOnly": "yarn run docs && yarn run build && yarn run style && yarn run unit"
   },
   "repository": {
     "type": "git",

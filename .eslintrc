@@ -16,6 +16,7 @@
   ],
   "rules": {
     "@typescript-eslint/return-await": ["error", "never"],
-    "@typescript-eslint/method-signature-style": ["error", "method"]
+    "@typescript-eslint/method-signature-style": ["error", "method"],
+    "@typescript-eslint/no-for-in-array": ["off"]
   }
 }
