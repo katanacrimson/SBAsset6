@@ -7,7 +7,7 @@
 //
 
 import * as path from 'path'
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import { expect } from 'chai'
 import { Uint64BE } from 'int64-buffer'
 import { SBAsset6 } from './../src/SBAsset6'
@@ -135,7 +135,7 @@ describe('SBAsset6', () => {
       const sbuf = new ConsumableBuffer(buf)
       const offset = new Uint64BE(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]))
       const length = new Uint64BE(Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x57]))
-      const expected = await fs.readFile(path.join(__dirname, '/samples/universe_server.config.patch'), {
+      const expected = await fs.promises.readFile(path.join(__dirname, '/samples/universe_server.config.patch'), {
         encoding: 'utf8',
         flag: 'r'
       })
@@ -162,7 +162,7 @@ describe('SBAsset6 integration test', () => {
       let res = await pak.load()
       expect(res).to.deep.equal(expected)
 
-      let expectedFile = await fs.readFile(path.join(__dirname, '/samples/universe_server.config.patch'), { encoding: 'utf8', flag: 'r' })
+      let expectedFile = await fs.promises.readFile(path.join(__dirname, '/samples/universe_server.config.patch'), { encoding: 'utf8', flag: 'r' })
       let resultFile = await pak.files.getFile('/universe_server.config.patch')
       expect(resultFile.toString('utf8')).to.equal(expectedFile)
     })
@@ -171,7 +171,7 @@ describe('SBAsset6 integration test', () => {
       const filename = path.join(__dirname, '/samples/ExampleMod.pak')
       const pak = new SBAsset6(filename)
       let expected = {
-        metadata: JSON.parse(await fs.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
+        metadata: JSON.parse(await fs.promises.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
         files: [
           '/items/somefile3.json',
           '/items/generic/crafting/somefile7.json',
@@ -203,14 +203,14 @@ describe('SBAsset6 integration test', () => {
   describe('SBAsset6 write functionality', () => {
     const tmpDir = path.join(__dirname, '/tmp')
     afterEach(async () => {
-      let files = await fs.readdir(tmpDir)
+      let files = await fs.promises.readdir(tmpDir)
       for (const file of files) {
         if (file === '.gitkeep') {
           continue
         }
 
         try {
-          await fs.unlink(path.join(tmpDir, file))
+          await fs.promises.unlink(path.join(tmpDir, file))
         } catch (err) {
           // noop
         }
@@ -247,7 +247,7 @@ describe('SBAsset6 integration test', () => {
 
       for (const file in files) {
         let virtualFile = (await pak.files.getFile(file)).toString()
-        let expected = await fs.readFile(files[file], { encoding: 'utf8', flag: 'r' })
+        let expected = await fs.promises.readFile(files[file], { encoding: 'utf8', flag: 'r' })
         expect(virtualFile).to.equal(expected)
       }
     })
@@ -302,7 +302,7 @@ describe('SBAsset6 integration test', () => {
 
       for (const file in files) {
         const virtualFile = (await pak.files.getFile(file)).toString()
-        const expected = await fs.readFile(files[file], { encoding: 'utf8', flag: 'r' })
+        const expected = await fs.promises.readFile(files[file], { encoding: 'utf8', flag: 'r' })
         expect(virtualFile).to.equal(expected)
       }
     })
@@ -315,7 +315,7 @@ describe('SBAsset6 integration test', () => {
       const sourcePath = path.join(__dirname, '/samples/ExampleMod/')
 
       let expected: { metadata: { [index: string]: any }, files: { [index: string]: string } } = {
-        metadata: JSON.parse(await fs.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
+        metadata: JSON.parse(await fs.promises.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
         files: {
           '/items/somefile3.json': path.join(sourcePath, '/items/somefile3.json'),
           '/items/generic/crafting/somefile7.json': path.join(sourcePath, '/items/generic/crafting/somefile7.json'),
@@ -342,7 +342,7 @@ describe('SBAsset6 integration test', () => {
       }
       expected.metadata.test = 'success'
 
-      await fs.copy(path.join(__dirname, '/samples/ExampleMod.pak'), filePath)
+      await fs.promises.copyFile(path.join(__dirname, '/samples/ExampleMod.pak'), filePath)
 
       const pak = new SBAsset6(filePath)
       await pak.load()
@@ -362,7 +362,7 @@ describe('SBAsset6 integration test', () => {
 
       for (const file in expected.files) {
         const virtualFile = (await pak.files.getFile(file)).toString()
-        const expectedContents = await fs.readFile(expected.files[file], { encoding: 'utf8', flag: 'r' })
+        const expectedContents = await fs.promises.readFile(expected.files[file], { encoding: 'utf8', flag: 'r' })
         expect(virtualFile).to.equal(expectedContents)
       }
     })
@@ -375,7 +375,7 @@ describe('SBAsset6 integration test', () => {
       const sourcePath = path.join(__dirname, '/samples/ExampleMod/')
 
       let expected: { metadata: { [index: string]: any }, files: { [index: string]: string } } = {
-        metadata: JSON.parse(await fs.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
+        metadata: JSON.parse(await fs.promises.readFile(path.join(__dirname, '/samples/ExampleMod.metadata'), { encoding: 'utf8', flag: 'r' })),
         files: {
           '/items/somefile3.json': path.join(sourcePath, '/items/somefile3.json'),
           '/items/generic/crafting/somefile7.json': path.join(sourcePath, '/items/generic/crafting/somefile7.json'),
@@ -398,7 +398,7 @@ describe('SBAsset6 integration test', () => {
       }
       expected.metadata.test = 'success'
 
-      await fs.copy(path.join(__dirname, '/samples/ExampleMod.pak'), filePath)
+      await fs.promises.copyFile(path.join(__dirname, '/samples/ExampleMod.pak'), filePath)
 
       const pak = new SBAsset6(filePath)
       await pak.load()
@@ -416,7 +416,7 @@ describe('SBAsset6 integration test', () => {
 
       for (const file in expected.files) {
         const virtualFile = (await pak.files.getFile(file)).toString()
-        const expectedContents = await fs.readFile(expected.files[file], { encoding: 'utf8', flag: 'r' })
+        const expectedContents = await fs.promises.readFile(expected.files[file], { encoding: 'utf8', flag: 'r' })
         expect(virtualFile).to.equal(expectedContents)
       }
     })

@@ -8,7 +8,7 @@
 
 import * as crypto from 'crypto'
 import * as path from 'path'
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import { expect } from 'chai'
 import { SBAsset6 } from './../src/SBAsset6'
 
@@ -16,14 +16,14 @@ describe('SBAsset6 regression tests', () => {
   const tmpDir = path.join(__dirname, '/tmp')
 
   afterEach(async () => {
-    let files = await fs.readdir(tmpDir + '/')
+    let files = await fs.promises.readdir(tmpDir + '/')
     for (const file of files) {
       if (file === '.gitkeep') {
         continue
       }
 
       try {
-        await fs.unlink(path.join(tmpDir, file))
+        await fs.promises.unlink(path.join(tmpDir, file))
       } catch (err) {
         // noop
       }
@@ -39,7 +39,7 @@ describe('SBAsset6 regression tests', () => {
     await pak.load()
     let sample = await pak.files.getFile('/sfx/white_noise.ogg')
 
-    await fs.writeFile(tmpDir + '/_white_noise.ogg', sample)
+    await fs.promises.writeFile(tmpDir + '/_white_noise.ogg', sample)
 
     let stream1 = fs.createReadStream(tmpDir + '/_white_noise.ogg')
     let stream2 = fs.createReadStream(samplePath + '/mod/sfx/white_noise.ogg')
