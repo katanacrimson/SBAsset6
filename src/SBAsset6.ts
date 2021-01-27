@@ -381,7 +381,7 @@ export class SBAsset6 {
    * @return {Promise<Buffer>} - The data we're looking for.
    */
   public async getPakData (offset: Uint64BE, size: Uint64BE): Promise<Buffer> {
-    if (!this.file === undefined) {
+    if (this.file === undefined) {
       throw new Error('Cannot read from unopened pak in SBAsset6.getPakData')
     }
 
@@ -458,21 +458,21 @@ export class SBAsset6 {
           break
 
         case 'fh':
-          if (!file.source.filehandle) {
+          if (file.source.filehandle === undefined) {
             throw new Error('Could not load file from provided file descriptor while saving.')
           }
           res = await sfile.pump(file.source.filehandle, start, filelength)
           break
 
         case 'path':
-          if (!file.source.path) {
+          if (file.source.path === undefined) {
             throw new Error('Could not load file from provided file path while saving.')
           }
           res = await sfile.pump(file.source.path, start, filelength)
           break
 
         case 'buffer':
-          if (!file.source.buffer) {
+          if (file.source.buffer === undefined) {
             throw new Error('Could not load file from provided Buffer while saving.')
           }
           res = await sfile.pump(file.source.buffer)
@@ -493,7 +493,7 @@ export class SBAsset6 {
     const metatablePosition = new Uint64BE(newFile.position)
     await sfile.pump(await SBAsset6._buildMetatable(this.metadata, filetable))
 
-    if (!newFile.fh) {
+    if (newFile.fh === undefined) {
       throw new Error('File handle for destination archive closed before saving completed.')
     }
 
