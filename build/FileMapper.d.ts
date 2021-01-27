@@ -1,4 +1,5 @@
 /// <reference types="node" />
+import * as fs from 'fs';
 import { Uint64BE } from 'int64-buffer';
 import { SBAsset6 } from './SBAsset6';
 /**
@@ -8,7 +9,7 @@ export interface FileTableInput {
     source: {
         pak?: SBAsset6;
         path?: string;
-        fd?: number;
+        filehandle?: fs.promises.FileHandle;
         buffer?: Buffer;
     };
     start?: Uint64BE;
@@ -30,7 +31,7 @@ export declare class FileMapper {
      *
      * @private
      */
-    private filetable;
+    private readonly filetable;
     /**
      * FileMapper is a class which provides an abstraction around SBAsset6 file tables for sensibly managing files contained within the archive.
      *

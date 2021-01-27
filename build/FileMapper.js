@@ -7,7 +7,8 @@
 // @url <https://github.com/damianb/SBAsset6>
 //
 Object.defineProperty(exports, "__esModule", { value: true });
-const fs = require("fs-extra");
+exports.FileMapper = void 0;
+const fs = require("fs");
 class FileMapper {
     /**
      * FileMapper is a class which provides an abstraction around SBAsset6 file tables for sensibly managing files contained within the archive.
@@ -85,33 +86,36 @@ class FileMapper {
             throw new Error('No file exists at the specified virtualPath.');
         }
         const options = await this.getFileMeta(virtualPath);
-        if (options.source.pak) {
+        if (options.source.pak !== undefined) {
             if (options.start === undefined || options.filelength === undefined) {
                 throw new Error('FileMapper.getFile requires that file table entries for paks provide a start and filelength.');
             }
             return options.source.pak.getPakData(options.start, options.filelength);
         }
-        else if (options.source.path || options.source.fd) {
-            let fd = 0;
-            if (options.source.path) {
-                fd = await fs.open(options.source.path, 'r');
+        else if (options.source.path !== undefined || options.source.filehandle !== undefined) {
+            let fh;
+            if (options.source.path !== undefined) {
+                fh = await fs.promises.open(options.source.path, 'r');
             }
-            else if (options.source.fd) {
-                fd = options.source.fd;
+            else if (options.source.filehandle !== undefined) {
+                fh = options.source.filehandle;
             }
-            let { size } = await fs.fstat(fd);
-            const position = options.start ? options.start.toNumber() : 0;
+            else {
+                throw new Error('Unable to obtain FileHandle for FileMapperEntry');
+            }
+            const { size } = await fs.promises.fstat(fh);
+            const position = options.start !== undefined ? options.start.toNumber() : 0;
             let maxRead = position - size;
-            if (options.filelength && options.filelength.toNumber() < maxRead) {
+            if (options.filelength !== undefined && options.filelength.toNumber() < maxRead) {
                 maxRead = options.filelength.toNumber();
             }
-            const { buffer } = await fs.read(fd, Buffer.alloc(maxRead), 0, maxRead, position);
+            const { buffer } = await fs.promises.read(fh, Buffer.alloc(maxRead), 0, maxRead, position);
             if (options.type === 'path') {
-                await fs.close(fd);
+                await fh.close();
             }
             return buffer;
         }
-        else if (options.source.buffer) {
+        else if (options.source.buffer !== undefined) {
             return options.source.buffer;
         }
         else {
@@ -147,9 +151,9 @@ class FileMapper {
      * ```
      */
     async setFile(virtualPath, options) {
-        options = options || { source: undefined };
+        // options = options || { source: undefined }
         let fileOptions;
-        if (options.source.pak) {
+        if (options.source.pak !== undefined) {
             if (options.start === undefined || options.filelength === undefined) {
                 throw new Error('FileMapper.setFile requires that pak entries to also provide a start and filelength.');
             }
@@ -159,33 +163,33 @@ class FileMapper {
                 source: {
                     pak: options.source.pak
                 },
-                start: options.start || undefined,
-                filelength: options.filelength || undefined
+                start: options.start,
+                filelength: options.filelength
             };
         }
-        else if (options.source.fd) {
+        else if (options.source.filehandle !== undefined) {
             fileOptions = {
-                type: 'fd',
+                type: 'fh',
                 virtualPath: virtualPath,
                 source: {
-                    fd: options.source.fd
+                    filehandle: options.source.filehandle
                 },
-                start: options.start || undefined,
-                filelength: options.filelength || undefined
+                start: options.start,
+                filelength: options.filelength
             };
         }
-        else if (options.source.path) {
+        else if (options.source.path !== undefined) {
             fileOptions = {
                 type: 'path',
                 virtualPath: virtualPath,
                 source: {
                     path: options.source.path
                 },
-                start: options.start || undefined,
-                filelength: options.filelength || undefined
+                start: options.start,
+                filelength: options.filelength
             };
         }
-        else if (options.source.buffer) {
+        else if (options.source.buffer !== undefined) {
             fileOptions = {
                 type: 'buffer',
                 virtualPath: virtualPath,
@@ -198,7 +202,6 @@ class FileMapper {
             throw new TypeError('FileMapper.setFile requires either a SBAsset6 instance, a file descriptor, a filepath, or a Buffer be specified for the source.');
         }
         this.filetable.set(virtualPath, fileOptions);
-        return;
     }
     /**
      * Delete a specified "file" from the archive.
@@ -223,7 +226,6 @@ class FileMapper {
         if (await this.exists(virtualPath)) {
             this.filetable.delete(virtualPath);
         }
-        return;
     }
     /**
      * Get the "file" metadata for the specified filepath (basically, where to load the file from).
