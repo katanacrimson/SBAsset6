@@ -207,7 +207,7 @@ export class FileMapper {
         start: options.start,
         filelength: options.filelength
       }
-    } else if (options.source.filehandle) {
+    } else if (options.source.filehandle !== undefined) {
       fileOptions = {
         type: 'fh',
         virtualPath: virtualPath,
@@ -217,7 +217,7 @@ export class FileMapper {
         start: options.start,
         filelength: options.filelength
       }
-    } else if (options.source.path) {
+    } else if (options.source.path !== undefined) {
       fileOptions = {
         type: 'path',
         virtualPath: virtualPath,
@@ -227,7 +227,7 @@ export class FileMapper {
         start: options.start,
         filelength: options.filelength
       }
-    } else if (options.source.buffer) {
+    } else if (options.source.buffer !== undefined) {
       fileOptions = {
         type: 'buffer',
         virtualPath: virtualPath,
@@ -240,8 +240,6 @@ export class FileMapper {
     }
 
     this.filetable.set(virtualPath, fileOptions)
-
-    return
   }
 
   /**
@@ -267,8 +265,6 @@ export class FileMapper {
     if (await this.exists(virtualPath)) {
       this.filetable.delete(virtualPath)
     }
-
-    return
   }
 
   /**

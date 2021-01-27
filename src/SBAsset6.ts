@@ -193,9 +193,9 @@ export class SBAsset6 {
     const numFiles = await SBON.readVarInt(sbuf)
 
     // read the file table from the metadata...
-    let filetable = []
+    const filetable = []
     let i = numFiles
-    while (i--) {
+    while (i-- !== 0) {
       const filePath = await SBON.readString(sbuf)
       const fileOffset = new Uint64BE(await sbuf.read(8))
       const filelength = new Uint64BE(await sbuf.read(8))
@@ -241,7 +241,7 @@ export class SBAsset6 {
    * @return {Promise<Buffer>} - The Buffer instance containing the exact SBAsset6 archive.
    */
   public static async _buildMetatable (metadata: { [index: string]: any }, filetable: FileTableEntry[]): Promise<Buffer> {
-    let sbuf = new ExpandingBuffer()
+    const sbuf = new ExpandingBuffer()
 
     await sbuf.write('INDEX')
     await SBON.writeMap(sbuf, metadata)
