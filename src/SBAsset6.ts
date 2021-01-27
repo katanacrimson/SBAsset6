@@ -381,7 +381,7 @@ export class SBAsset6 {
    * @return {Promise<Buffer>} - The data we're looking for.
    */
   public async getPakData (offset: Uint64BE, size: Uint64BE): Promise<Buffer> {
-    if (!this.file !== undefined) {
+    if (!this.file === undefined) {
       throw new Error('Cannot read from unopened pak in SBAsset6.getPakData')
     }
 
@@ -438,20 +438,20 @@ export class SBAsset6 {
     await sfile.pump(Buffer.alloc(8))
 
     const files = await this.files.list()
-    let filetable = []
+    const filetable = []
     this.progress.emit('save.files', { message: 'Writing files to archive', total: files.length })
     for (const i in files) {
       const filename = files[i]
       const file = await this.files.getFileMeta(filename)
 
-      let start = (file.start instanceof Uint64BE) ? file.start.toNumber() : file.start
-      let filelength = (file.filelength instanceof Uint64BE) ? file.filelength.toNumber() : file.filelength
+      const start = (file.start instanceof Uint64BE) ? file.start.toNumber() : file.start
+      const filelength = (file.filelength instanceof Uint64BE) ? file.filelength.toNumber() : file.filelength
 
       let res = null
       this.progress.emit('save.file.progress', { message: 'Writing file to archive', target: file.virtualPath, type: file.type, index: i })
       switch (file.type) {
         case 'pak':
-          if (!file.source.pak || !file.source.pak.file || !file.source.pak.file.fh) {
+          if (file.source.pak === undefined || file.source.pak.file === undefined || file.source.pak.file.fh === undefined) {
             throw new Error('Could not load file from SBAsset6 archive while saving.')
           }
           res = await sfile.pump(file.source.pak.file.fh, start, filelength)
