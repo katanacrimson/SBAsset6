@@ -500,7 +500,7 @@ export class SBAsset6 {
     }
 
     // metatable position should always be a Uint64BE found at 0x00000008
-    await fs.promises.write(newFile.fh, metatablePosition.toBuffer(), 0, 8, 8)
+    await newFile.fh.write(metatablePosition.toBuffer(), 0, 8, 8)
     await newFile.close()
     await this.close()
 
