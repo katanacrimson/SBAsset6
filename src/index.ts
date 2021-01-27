@@ -6,7 +6,6 @@
 // @url <https://github.com/damianb/SBAsset6>
 //
 
-
 // istanbul ignore file
 
 export { SBAsset6 } from './SBAsset6'

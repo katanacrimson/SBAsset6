@@ -15,12 +15,12 @@ import { SBAsset6 } from './SBAsset6'
  */
 export interface FileTableInput {
   source: {
-    pak?: SBAsset6,
-    path?: string,
-    filehandle?: fs.promises.FileHandle,
+    pak?: SBAsset6
+    path?: string
+    filehandle?: fs.promises.FileHandle
     buffer?: Buffer
   }
-  start?: Uint64BE,
+  start?: Uint64BE
   filelength?: Uint64BE
 }
 
@@ -41,7 +41,7 @@ export class FileMapper {
    *
    * @private
    */
-  private filetable: Map<string, FileMapperEntry>
+  private readonly filetable: Map<string, FileMapperEntry>
 
   /**
    * FileMapper is a class which provides an abstraction around SBAsset6 file tables for sensibly managing files contained within the archive.
@@ -124,26 +124,26 @@ export class FileMapper {
 
     const options = await this.getFileMeta(virtualPath)
 
-    if (options.source.pak) {
+    if (options.source.pak !== undefined) {
       if (options.start === undefined || options.filelength === undefined) {
         throw new Error('FileMapper.getFile requires that file table entries for paks provide a start and filelength.')
       }
 
       return options.source.pak.getPakData(options.start, options.filelength)
-    } else if (options.source.path || options.source.filehandle) {
+    } else if (options.source.path !== undefined || options.source.filehandle !== undefined) {
       let fh: fs.promises.FileHandle
-      if (options.source.path) {
+      if (options.source.path !== undefined) {
         fh = await fs.promises.open(options.source.path, 'r')
-      } else if (options.source.filehandle) {
+      } else if (options.source.filehandle !== undefined) {
         fh = options.source.filehandle
       } else {
         throw new Error('Unable to obtain FileHandle for FileMapperEntry')
       }
 
-      let { size } = await fs.promises.fstat(fh)
-      const position = options.start ? options.start.toNumber() : 0
+      const { size } = await fs.promises.fstat(fh)
+      const position = options.start !== undefined ? options.start.toNumber() : 0
       let maxRead = position - size
-      if (options.filelength && options.filelength.toNumber() < maxRead) {
+      if (options.filelength !== undefined && options.filelength.toNumber() < maxRead) {
         maxRead = options.filelength.toNumber()
       }
 
@@ -154,7 +154,7 @@ export class FileMapper {
       }
 
       return buffer
-    } else if (options.source.buffer) {
+    } else if (options.source.buffer !== undefined) {
       return options.source.buffer
     } else {
       throw new TypeError('Cannot get specified file\'s contents.')
@@ -190,10 +190,10 @@ export class FileMapper {
    * ```
    */
   public async setFile (virtualPath: string, options: FileTableInput): Promise<void> {
-    options = options || { source: undefined }
+    // options = options || { source: undefined }
 
     let fileOptions: FileMapperEntry
-    if (options.source.pak) {
+    if (options.source.pak !== undefined) {
       if (options.start === undefined || options.filelength === undefined) {
         throw new Error('FileMapper.setFile requires that pak entries to also provide a start and filelength.')
       }
@@ -204,8 +204,8 @@ export class FileMapper {
         source: {
           pak: options.source.pak
         },
-        start: options.start || undefined,
-        filelength: options.filelength || undefined
+        start: options.start,
+        filelength: options.filelength
       }
     } else if (options.source.filehandle) {
       fileOptions = {
@@ -214,8 +214,8 @@ export class FileMapper {
         source: {
           filehandle: options.source.filehandle
         },
-        start: options.start || undefined,
-        filelength: options.filelength || undefined
+        start: options.start,
+        filelength: options.filelength
       }
     } else if (options.source.path) {
       fileOptions = {
@@ -224,8 +224,8 @@ export class FileMapper {
         source: {
           path: options.source.path
         },
-        start: options.start || undefined,
-        filelength: options.filelength || undefined
+        start: options.start,
+        filelength: options.filelength
       }
     } else if (options.source.buffer) {
       fileOptions = {
