@@ -7,7 +7,7 @@
 //
 
 import { EventEmitter } from 'events'
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import { Uint64BE } from 'int64-buffer'
 import {
   ConsumableFile,
@@ -193,9 +193,9 @@ export class SBAsset6 {
     const numFiles = await SBON.readVarInt(sbuf)
 
     // read the file table from the metadata...
-    let filetable = []
+    const filetable = []
     let i = numFiles
-    while (i--) {
+    while (i-- !== 0) {
       const filePath = await SBON.readString(sbuf)
       const fileOffset = new Uint64BE(await sbuf.read(8))
       const filelength = new Uint64BE(await sbuf.read(8))
@@ -241,13 +241,13 @@ export class SBAsset6 {
    * @return {Promise<Buffer>} - The Buffer instance containing the exact SBAsset6 archive.
    */
   public static async _buildMetatable (metadata: { [index: string]: any }, filetable: FileTableEntry[]): Promise<Buffer> {
-    let sbuf = new ExpandingBuffer()
+    const sbuf = new ExpandingBuffer()
 
     await sbuf.write('INDEX')
     await SBON.writeMap(sbuf, metadata)
     await SBON.writeVarInt(sbuf, Object.values(filetable).length)
 
-    for (let file of filetable) {
+    for (const file of filetable) {
       await SBON.writeString(sbuf, file.path)
       await sbuf.write(file.offset.toBuffer())
       await sbuf.write(file.filelength.toBuffer())
@@ -336,15 +336,13 @@ export class SBAsset6 {
    * ```
    */
   public async close (): Promise<void> {
-    if (this.file) {
+    if (this.file !== undefined) {
       this.progress.emit('close', { message: 'Closing archive file' })
       await this.file.close()
     }
     this.file = this.metatablePosition = undefined
     this.metadata = {}
     this.files = new FileMapper()
-
-    return
   }
 
   /**
@@ -383,7 +381,7 @@ export class SBAsset6 {
    * @return {Promise<Buffer>} - The data we're looking for.
    */
   public async getPakData (offset: Uint64BE, size: Uint64BE): Promise<Buffer> {
-    if (!this.file) {
+    if (this.file === undefined) {
       throw new Error('Cannot read from unopened pak in SBAsset6.getPakData')
     }
 
@@ -440,41 +438,41 @@ export class SBAsset6 {
     await sfile.pump(Buffer.alloc(8))
 
     const files = await this.files.list()
-    let filetable = []
+    const filetable = []
     this.progress.emit('save.files', { message: 'Writing files to archive', total: files.length })
     for (const i in files) {
       const filename = files[i]
       const file = await this.files.getFileMeta(filename)
 
-      let start = (file.start instanceof Uint64BE) ? file.start.toNumber() : file.start
-      let filelength = (file.filelength instanceof Uint64BE) ? file.filelength.toNumber() : file.filelength
+      const start = (file.start instanceof Uint64BE) ? file.start.toNumber() : file.start
+      const filelength = (file.filelength instanceof Uint64BE) ? file.filelength.toNumber() : file.filelength
 
       let res = null
       this.progress.emit('save.file.progress', { message: 'Writing file to archive', target: file.virtualPath, type: file.type, index: i })
       switch (file.type) {
         case 'pak':
-          if (!file.source.pak || !file.source.pak.file || !file.source.pak.file.fd) {
+          if (file.source.pak === undefined || file.source.pak.file === undefined || file.source.pak.file.fh === undefined) {
             throw new Error('Could not load file from SBAsset6 archive while saving.')
           }
-          res = await sfile.pump(file.source.pak.file.fd, start, filelength)
+          res = await sfile.pump(file.source.pak.file.fh, start, filelength)
           break
 
-        case 'fd':
-          if (!file.source.fd) {
+        case 'fh':
+          if (file.source.filehandle === undefined) {
             throw new Error('Could not load file from provided file descriptor while saving.')
           }
-          res = await sfile.pump(file.source.fd, start, filelength)
+          res = await sfile.pump(file.source.filehandle, start, filelength)
           break
 
         case 'path':
-          if (!file.source.path) {
+          if (file.source.path === undefined) {
             throw new Error('Could not load file from provided file path while saving.')
           }
           res = await sfile.pump(file.source.path, start, filelength)
           break
 
         case 'buffer':
-          if (!file.source.buffer) {
+          if (file.source.buffer === undefined) {
             throw new Error('Could not load file from provided Buffer while saving.')
           }
           res = await sfile.pump(file.source.buffer)
@@ -495,17 +493,18 @@ export class SBAsset6 {
     const metatablePosition = new Uint64BE(newFile.position)
     await sfile.pump(await SBAsset6._buildMetatable(this.metadata, filetable))
 
-    if (!newFile.fd) {
-      throw new Error('File descriptor for destination archive closed before saving completed.')
+    if (newFile.fh === undefined) {
+      throw new Error('File handle for destination archive closed before saving completed.')
     }
 
     // metatable position should always be a Uint64BE found at 0x00000008
-    await fs.write(newFile.fd, metatablePosition.toBuffer(), 0, 8, 8)
+    await newFile.fh.write(metatablePosition.toBuffer(), 0, 8, 8)
     await newFile.close()
     await this.close()
 
     this.progress.emit('save.done', { message: 'Saving archive file complete' })
-    await fs.move(this.path + '.tmp', this.path, { overwrite: true })
+    await fs.promises.copyFile(this.path + '.tmp', this.path)
+    await fs.promises.unlink(this.path + '.tmp')
 
     return this.load()
   }

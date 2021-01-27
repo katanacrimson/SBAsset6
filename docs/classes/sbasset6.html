@@ -895,8 +895,6 @@ img { max-width: 100%; }
 							</div>
 							<input type="checkbox" id="tsd-filter-inherited" checked />
 							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
-							<input type="checkbox" id="tsd-filter-externals" checked />
-							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
 							<input type="checkbox" id="tsd-filter-only-exported" />
 							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
 						</div>
@@ -1011,15 +1009,14 @@ img { max-width: 100%; }
 							</div>
 							<dl class="tsd-comment-tags">
 								<dt>example</dt>
-								<dd><pre><code><span class="hljs-keyword">import</span> { SBAsset6 } <span class="hljs-keyword">from</span> <span class="hljs-string">'sbasset6'</span>
-<span class="hljs-keyword">const</span> filepath = <span class="hljs-string">'/path/to/mod.pak'</span>
+								<dd><pre><code>import { SBAsset6 } from 'sbasset6'
+const filepath = '/path/<span class="hljs-keyword">to</span>/<span class="hljs-keyword">mod</span>.pak'
 
-<span class="hljs-keyword">const</span> pak = <span class="hljs-keyword">new</span> SBAsset6(filepath)
-<span class="hljs-keyword">const</span> { metadata, files } = <span class="hljs-keyword">await</span> pak.load()
+const pak = <span class="hljs-keyword">new</span> <span class="hljs-constructor">SBAsset6(<span class="hljs-params">filepath</span>)</span>
+const { metadata, files } = await pak.load<span class="hljs-literal">()</span>
 
-<span class="hljs-keyword">let</span> fileContents = <span class="hljs-keyword">await</span> pak.getFile(<span class="hljs-string">'/path/inside/of/pak/to/file.config'</span>)
-<span class="hljs-comment">// note, this file should exist within the files array above</span>
-</code></pre></dd>
+<span class="hljs-keyword">let</span> fileContents = await pak.get<span class="hljs-constructor">File('<span class="hljs-operator">/</span><span class="hljs-params">path</span><span class="hljs-operator">/</span><span class="hljs-params">inside</span><span class="hljs-operator">/</span><span class="hljs-params">of</span><span class="hljs-operator">/</span><span class="hljs-params">pak</span><span class="hljs-operator">/</span><span class="hljs-params">to</span><span class="hljs-operator">/</span><span class="hljs-params">file</span>.<span class="hljs-params">config</span>')</span>
+<span class="hljs-comment">// note, this file should exist within the files array above</span></code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1129,8 +1126,7 @@ img { max-width: 100%; }
 
 <span class="hljs-comment">// all done here. time to clean up and release resources.</span>
 
-<span class="hljs-keyword">await</span> pak.close()
-</code></pre></dd>
+<span class="hljs-keyword">await</span> pak.close()</code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -1165,8 +1161,7 @@ img { max-width: 100%; }
 <span class="hljs-comment">// ...</span>
 
 <span class="hljs-comment">// wait, did we load the pak earlier? has it been closed since? let's check...</span>
-<span class="hljs-keyword">const</span> isOpen = <span class="hljs-keyword">await</span> pak.isLoaded()
-</code></pre></dd>
+<span class="hljs-keyword">const</span> isOpen = <span class="hljs-keyword">await</span> pak.isLoaded()</code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -1214,8 +1209,7 @@ img { max-width: 100%; }
 								<dt>example</dt>
 								<dd><pre><code><span class="hljs-keyword">const</span> filepath = <span class="hljs-string">'/path/to/mod.pak'</span>
 <span class="hljs-keyword">const</span> pak = <span class="hljs-keyword">new</span> SBAsset6(filepath)
-<span class="hljs-keyword">const</span> { metadata, files } = <span class="hljs-keyword">await</span> pak.load()
-</code></pre></dd>
+<span class="hljs-keyword">const</span> { metadata, files } = <span class="hljs-keyword">await</span> pak.load()</code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/loadresult.html" class="tsd-signature-type">LoadResult</a><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -1287,8 +1281,7 @@ img { max-width: 100%; }
 pak.metadata.description = <span class="hljs-string">'Shorter description.'</span>
 
 <span class="hljs-comment">// Need to save our changes now...</span>
-<span class="hljs-keyword">await</span> pak.save()
-</code></pre></dd>
+<span class="hljs-keyword">await</span> pak.save()</code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/loadresult.html" class="tsd-signature-type">LoadResult</a><span class="tsd-signature-symbol">&gt;</span></h4>
