@@ -6,7 +6,7 @@
 // @url <https://github.com/damianb/SBAsset6>
 //
 
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import { Uint64BE } from 'int64-buffer'
 import { SBAsset6 } from './SBAsset6'
 
@@ -17,7 +17,7 @@ export interface FileTableInput {
   source: {
     pak?: SBAsset6,
     path?: string,
-    fd?: number,
+    filehandle?: fs.promises.FileHandle,
     buffer?: Buffer
   }
   start?: Uint64BE,
@@ -130,25 +130,27 @@ export class FileMapper {
       }
 
       return options.source.pak.getPakData(options.start, options.filelength)
-    } else if (options.source.path || options.source.fd) {
-      let fd: number = 0
+    } else if (options.source.path || options.source.filehandle) {
+      let fh: fs.promises.FileHandle
       if (options.source.path) {
-        fd = await fs.open(options.source.path, 'r')
-      } else if (options.source.fd) {
-        fd = options.source.fd
+        fh = await fs.promises.open(options.source.path, 'r')
+      } else if (options.source.filehandle) {
+        fh = options.source.filehandle
+      } else {
+        throw new Error('Unable to obtain FileHandle for FileMapperEntry')
       }
 
-      let { size } = await fs.fstat(fd)
+      let { size } = await fs.promises.fstat(fh)
       const position = options.start ? options.start.toNumber() : 0
       let maxRead = position - size
       if (options.filelength && options.filelength.toNumber() < maxRead) {
         maxRead = options.filelength.toNumber()
       }
 
-      const { buffer } = await fs.read(fd, Buffer.alloc(maxRead), 0, maxRead, position)
+      const { buffer } = await fs.promises.read(fh, Buffer.alloc(maxRead), 0, maxRead, position)
 
       if (options.type === 'path') {
-        await fs.close(fd)
+        await fh.close()
       }
 
       return buffer
@@ -205,12 +207,12 @@ export class FileMapper {
         start: options.start || undefined,
         filelength: options.filelength || undefined
       }
-    } else if (options.source.fd) {
+    } else if (options.source.filehandle) {
       fileOptions = {
-        type: 'fd',
+        type: 'fh',
         virtualPath: virtualPath,
         source: {
-          fd: options.source.fd
+          filehandle: options.source.filehandle
         },
         start: options.start || undefined,
         filelength: options.filelength || undefined

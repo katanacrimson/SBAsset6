@@ -7,7 +7,7 @@
 //
 
 import { EventEmitter } from 'events'
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import { Uint64BE } from 'int64-buffer'
 import {
   ConsumableFile,
@@ -453,17 +453,17 @@ export class SBAsset6 {
       this.progress.emit('save.file.progress', { message: 'Writing file to archive', target: file.virtualPath, type: file.type, index: i })
       switch (file.type) {
         case 'pak':
-          if (!file.source.pak || !file.source.pak.file || !file.source.pak.file.fd) {
+          if (!file.source.pak || !file.source.pak.file || !file.source.pak.file.fh) {
             throw new Error('Could not load file from SBAsset6 archive while saving.')
           }
-          res = await sfile.pump(file.source.pak.file.fd, start, filelength)
+          res = await sfile.pump(file.source.pak.file.fh, start, filelength)
           break
 
-        case 'fd':
-          if (!file.source.fd) {
+        case 'fh':
+          if (!file.source.filehandle) {
             throw new Error('Could not load file from provided file descriptor while saving.')
           }
-          res = await sfile.pump(file.source.fd, start, filelength)
+          res = await sfile.pump(file.source.filehandle, start, filelength)
           break
 
         case 'path':
@@ -495,17 +495,18 @@ export class SBAsset6 {
     const metatablePosition = new Uint64BE(newFile.position)
     await sfile.pump(await SBAsset6._buildMetatable(this.metadata, filetable))
 
-    if (!newFile.fd) {
-      throw new Error('File descriptor for destination archive closed before saving completed.')
+    if (!newFile.fh) {
+      throw new Error('File handle for destination archive closed before saving completed.')
     }
 
     // metatable position should always be a Uint64BE found at 0x00000008
-    await fs.write(newFile.fd, metatablePosition.toBuffer(), 0, 8, 8)
+    await fs.promises.write(newFile.fh, metatablePosition.toBuffer(), 0, 8, 8)
     await newFile.close()
     await this.close()
 
     this.progress.emit('save.done', { message: 'Saving archive file complete' })
-    await fs.move(this.path + '.tmp', this.path, { overwrite: true })
+    await fs.promises.copyFile(this.path + '.tmp', this.path)
+    await fs.promises.unlink(this.path + '.tmp')
 
     return this.load()
   }

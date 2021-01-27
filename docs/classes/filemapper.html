@@ -895,8 +895,6 @@ img { max-width: 100%; }
 							</div>
 							<input type="checkbox" id="tsd-filter-inherited" checked />
 							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
-							<input type="checkbox" id="tsd-filter-externals" checked />
-							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
 							<input type="checkbox" id="tsd-filter-only-exported" />
 							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
 						</div>
@@ -914,9 +912,6 @@ img { max-width: 100%; }
 			<ul>
 				<li class=" tsd-kind-constructor tsd-parent-kind-class">
 					<a href="filemapper.html#constructor" class="tsd-kind-icon">constructor</a>
-				</li>
-				<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-private">
-					<a href="filemapper.html#filetable" class="tsd-kind-icon">filetable</a>
 				</li>
 				<li class=" tsd-kind-method tsd-parent-kind-class">
 					<a href="filemapper.html#deletefile" class="tsd-kind-icon">delete<wbr>File</a>
@@ -966,12 +961,6 @@ img { max-width: 100%; }
 							<li class="tsd-kind-constructor tsd-parent-kind-class"><a href="filemapper.html#constructor" class="tsd-kind-icon">constructor</a></li>
 						</ul>
 					</section>
-					<section class="tsd-index-section tsd-is-private tsd-is-private-protected">
-						<h3>Properties</h3>
-						<ul class="tsd-index-list">
-							<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="filemapper.html#filetable" class="tsd-kind-icon">filetable</a></li>
-						</ul>
-					</section>
 					<section class="tsd-index-section ">
 						<h3>Methods</h3>
 						<ul class="tsd-index-list">
@@ -1011,31 +1000,12 @@ img { max-width: 100%; }
 
 <span class="hljs-keyword">const</span> pak = <span class="hljs-keyword">new</span> SBAsset6(filepath)
 <span class="hljs-keyword">await</span> pak.load()
-<span class="hljs-keyword">let</span> files = <span class="hljs-keyword">await</span> pak.files.list()
-</code></pre></dd>
+<span class="hljs-keyword">let</span> files = <span class="hljs-keyword">await</span> pak.files.list()</code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-returns-title">Returns <a href="filemapper.html" class="tsd-signature-type">FileMapper</a></h4>
 					</li>
 				</ul>
-			</section>
-		</section>
-		<section class="tsd-panel-group tsd-member-group tsd-is-private tsd-is-private-protected">
-			<h2>Properties</h2>
-			<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private">
-				<a name="filetable" class="tsd-anchor"></a>
-				<h3><span class="tsd-flag ts-flagPrivate">Private</span> filetable</h3>
-				<div class="tsd-signature tsd-kind-icon">filetable<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Map</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">FileMapperEntry</span><span class="tsd-signature-symbol">&gt;</span></div>
-				<aside class="tsd-sources">
-					<ul>
-						<li>Defined in FileMapper.ts:44</li>
-					</ul>
-				</aside>
-				<div class="tsd-comment tsd-typography">
-					<div class="lead">
-						<p>Storage for all virtual file mapping data for the SBAsset6 archive.</p>
-					</div>
-				</div>
 			</section>
 		</section>
 		<section class="tsd-panel-group tsd-member-group ">
@@ -1060,15 +1030,14 @@ img { max-width: 100%; }
 							</div>
 							<dl class="tsd-comment-tags">
 								<dt>example</dt>
-								<dd><pre><code><span class="hljs-keyword">const</span> filepath = <span class="hljs-string">'/path/to/mod.pak'</span>
-<span class="hljs-keyword">const</span> pak = <span class="hljs-keyword">new</span> SBAsset6(filepath)
-<span class="hljs-keyword">await</span> pak.load()
+								<dd><pre><code>const filepath = '/path/<span class="hljs-keyword">to</span>/<span class="hljs-keyword">mod</span>.pak'
+const pak = <span class="hljs-keyword">new</span> <span class="hljs-constructor">SBAsset6(<span class="hljs-params">filepath</span>)</span>
+await pak.load<span class="hljs-literal">()</span>
 
-<span class="hljs-keyword">await</span> pak.files.deleteFile(<span class="hljs-string">'/path/to/file/inside/pak.txt'</span>)
+await pak.files.delete<span class="hljs-constructor">File('<span class="hljs-operator">/</span><span class="hljs-params">path</span><span class="hljs-operator">/</span><span class="hljs-params">to</span><span class="hljs-operator">/</span><span class="hljs-params">file</span><span class="hljs-operator">/</span><span class="hljs-params">inside</span><span class="hljs-operator">/</span><span class="hljs-params">pak</span>.<span class="hljs-params">txt</span>')</span>
 
 <span class="hljs-comment">// save our changes. we never wanted that file in there anyways!</span>
-<span class="hljs-keyword">await</span> pak.save()
-</code></pre></dd>
+await pak.save<span class="hljs-literal">()</span></code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1110,8 +1079,7 @@ img { max-width: 100%; }
 <span class="hljs-keyword">const</span> fileExists = <span class="hljs-keyword">await</span> pak.files.exists(<span class="hljs-string">'/path/to/file/inside/pak.txt'</span>)
 <span class="hljs-keyword">if</span>(fileExists) {
   <span class="hljs-comment">// ...</span>
-}
-</code></pre></dd>
+}</code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1146,12 +1114,11 @@ img { max-width: 100%; }
 							</div>
 							<dl class="tsd-comment-tags">
 								<dt>example</dt>
-								<dd><pre><code><span class="hljs-keyword">const</span> filepath = <span class="hljs-string">'/path/to/mod.pak'</span>
-<span class="hljs-keyword">const</span> pak = <span class="hljs-keyword">new</span> SBAsset6(filepath)
-<span class="hljs-keyword">await</span> pak.load()
+								<dd><pre><code>const filepath = '/path/<span class="hljs-keyword">to</span>/<span class="hljs-keyword">mod</span>.pak'
+const pak = <span class="hljs-keyword">new</span> <span class="hljs-constructor">SBAsset6(<span class="hljs-params">filepath</span>)</span>
+await pak.load<span class="hljs-literal">()</span>
 
-<span class="hljs-keyword">const</span> fileContents = <span class="hljs-keyword">await</span> pak.files.getFile(<span class="hljs-string">'/path/to/file/inside/pak.txt'</span>)
-</code></pre></dd>
+const fileContents = await pak.files.get<span class="hljs-constructor">File('<span class="hljs-operator">/</span><span class="hljs-params">path</span><span class="hljs-operator">/</span><span class="hljs-params">to</span><span class="hljs-operator">/</span><span class="hljs-params">file</span><span class="hljs-operator">/</span><span class="hljs-params">inside</span><span class="hljs-operator">/</span><span class="hljs-params">pak</span>.<span class="hljs-params">txt</span>')</span></code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1193,8 +1160,7 @@ img { max-width: 100%; }
 <span class="hljs-keyword">const</span> pak = <span class="hljs-keyword">new</span> SBAsset6(filepath)
 <span class="hljs-keyword">await</span> pak.load()
 
-<span class="hljs-keyword">const</span> files = <span class="hljs-keyword">await</span> pak.files.list()
-</code></pre></dd>
+<span class="hljs-keyword">const</span> files = <span class="hljs-keyword">await</span> pak.files.list()</code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -1224,23 +1190,22 @@ img { max-width: 100%; }
 							</div>
 							<dl class="tsd-comment-tags">
 								<dt>example</dt>
-								<dd><pre><code><span class="hljs-keyword">const</span> filepath = <span class="hljs-string">'/path/to/mod.pak'</span>
-<span class="hljs-keyword">const</span> pak = <span class="hljs-keyword">new</span> SBAsset6(filepath)
-<span class="hljs-keyword">await</span> pak.load()
+								<dd><pre><code>const filepath = '/path/<span class="hljs-keyword">to</span>/<span class="hljs-keyword">mod</span>.pak'
+const pak = <span class="hljs-keyword">new</span> <span class="hljs-constructor">SBAsset6(<span class="hljs-params">filepath</span>)</span>
+await pak.load<span class="hljs-literal">()</span>
 
-<span class="hljs-keyword">const</span> fileContents = <span class="hljs-keyword">await</span> pak.files.getFile(<span class="hljs-string">'/path/to/file/inside/pak.txt'</span>)
-<span class="hljs-keyword">await</span> pak.files.setFile(<span class="hljs-string">'/path/to/file/inside/pak.txt'</span>, { <span class="hljs-attr">path</span>: <span class="hljs-string">'/samples/file.txt'</span> })
+const fileContents = await pak.files.get<span class="hljs-constructor">File('<span class="hljs-operator">/</span><span class="hljs-params">path</span><span class="hljs-operator">/</span><span class="hljs-params">to</span><span class="hljs-operator">/</span><span class="hljs-params">file</span><span class="hljs-operator">/</span><span class="hljs-params">inside</span><span class="hljs-operator">/</span><span class="hljs-params">pak</span>.<span class="hljs-params">txt</span>')</span>
+await pak.files.set<span class="hljs-constructor">File('<span class="hljs-operator">/</span><span class="hljs-params">path</span><span class="hljs-operator">/</span><span class="hljs-params">to</span><span class="hljs-operator">/</span><span class="hljs-params">file</span><span class="hljs-operator">/</span><span class="hljs-params">inside</span><span class="hljs-operator">/</span><span class="hljs-params">pak</span>.<span class="hljs-params">txt</span>', { <span class="hljs-params">path</span>: '<span class="hljs-operator">/</span><span class="hljs-params">samples</span><span class="hljs-operator">/</span><span class="hljs-params">file</span>.<span class="hljs-params">txt</span>' })</span>
 <span class="hljs-comment">// note: use of Date.now() below would make the build non-reproducible.</span>
 <span class="hljs-comment">//   try to avoid this, in reality!  it's just an example for now.</span>
-<span class="hljs-keyword">const</span> buildMeta = Buffer.from(<span class="hljs-built_in">JSON</span>.stringify({
-  <span class="hljs-attr">buildTool</span>: <span class="hljs-string">'js-starbound/SBAsset6/2.0.0'</span>,
-  <span class="hljs-attr">buildTime</span>: <span class="hljs-built_in">Date</span>.now()
+const buildMeta = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Buffer</span>.</span></span>from(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JSON</span>.</span></span>stringify({
+  buildTool: 'js-starbound/SBAsset6/<span class="hljs-number">2.0</span>.<span class="hljs-number">0</span>',
+  buildTime: <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Date</span>.</span></span>now<span class="hljs-literal">()</span>
 }))
-<span class="hljs-keyword">await</span> pak.files.setFile(<span class="hljs-string">'/buildinfo.json'</span>, { <span class="hljs-attr">buffer</span>: buildMeta })
+await pak.files.set<span class="hljs-constructor">File('<span class="hljs-operator">/</span><span class="hljs-params">buildinfo</span>.<span class="hljs-params">json</span>', { <span class="hljs-params">buffer</span>: <span class="hljs-params">buildMeta</span> })</span>
 
 <span class="hljs-comment">// gotta save our changes now!</span>
-<span class="hljs-keyword">await</span> pak.save()
-</code></pre></dd>
+await pak.save<span class="hljs-literal">()</span></code></pre></dd>
 							</dl>
 						</div>
 						<h4 class="tsd-parameters-title">Parameters</h4>
