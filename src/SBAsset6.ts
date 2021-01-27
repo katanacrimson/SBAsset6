@@ -247,7 +247,7 @@ export class SBAsset6 {
     await SBON.writeMap(sbuf, metadata)
     await SBON.writeVarInt(sbuf, Object.values(filetable).length)
 
-    for (let file of filetable) {
+    for (const file of filetable) {
       await SBON.writeString(sbuf, file.path)
       await sbuf.write(file.offset.toBuffer())
       await sbuf.write(file.filelength.toBuffer())
@@ -336,15 +336,13 @@ export class SBAsset6 {
    * ```
    */
   public async close (): Promise<void> {
-    if (this.file) {
+    if (this.file !== undefined) {
       this.progress.emit('close', { message: 'Closing archive file' })
       await this.file.close()
     }
     this.file = this.metatablePosition = undefined
     this.metadata = {}
     this.files = new FileMapper()
-
-    return
   }
 
   /**
@@ -383,7 +381,7 @@ export class SBAsset6 {
    * @return {Promise<Buffer>} - The data we're looking for.
    */
   public async getPakData (offset: Uint64BE, size: Uint64BE): Promise<Buffer> {
-    if (!this.file) {
+    if (!this.file !== undefined) {
       throw new Error('Cannot read from unopened pak in SBAsset6.getPakData')
     }
 
